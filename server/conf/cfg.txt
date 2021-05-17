@@ -1,0 +1,8 @@
+enc_pass=my_pass2
+salt=chan_search
+iv=3FZEMcOdhXdXsYgQZR7LPw==
+#server_url=http://47.94.229.126/ws
+server_url=http://localhost:7654
+wechat_id=lsm-20150518
+clear_pass=38452#QD%RRF#
+do_sync=false

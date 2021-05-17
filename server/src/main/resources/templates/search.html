@@ -1,0 +1,69 @@
+<html>
+<head>
+<title th:text="'搜索--'+${wechatName}"></title>
+<style>
+.not-active {
+	  pointer-events: none;
+	  cursor: default;
+	  text-decoration: none;
+	  color: black;
+}
+span.hl{
+	color:red;
+}
+.hlline{
+	font-size:1.2em;
+}
+.item{
+	padding: 10px 0;
+}
+.item > p{
+	font-size: 1.5em;
+}
+.pagination{
+	text-align:center;
+	font-size: large;
+	padding-bottom: 50px;
+}
+.pagination a{
+	padding:0 10px;
+}
+</style>
+</style>
+</head>
+<body>
+<form>
+公众号名称：<input th:value="${wechatName}"  type="text" name="wechatName" />
+发表日期范围：从 <input th:value="${startDate}"  type="text" name="startDate" />
+到 <input th:value="${endDate}"  type="text" name="endDate" />
+<input type="submit" name="submit" value="搜索" />
+</form>
+
+<div class='content'>
+       <div class='item' th:each="item,iterStat : ${items}" th:name="${iterStat.index}">
+       		<p>
+       		  <a target='_blank' class='title' th:href='@{viewPage(id=${item.id})}' th:utext='${item.title}'></a>
+			</p>
+			<div class='hlContent'>
+			    <div th:utext="'公众号：' + ${item.wechatName}"></div>
+			</div>
+			<div class='hlContent'>
+                <div th:utext="'发布日期：' + ${item.pubDate}"></div>
+                <a target='_blank' class='title' th:href='${item.url}' th:utext='查看原文'></a>
+			</div>
+		</div>
+</div>
+
+
+<div th:if="${totalCount >0}">
+<a target='_blank' class='title' th:href='@{download(wechatName=${wechatName}, startDate=${startDate}, endDate=${endDate})}' th:utext='下载JSON'></a>
+</div>
+
+<div th:if="${totalPage > 0}" class="pagination">
+
+    <a th:each="pageNumber : ${pageNumbers}" th:href="@{''(page=${pageNumber}, q=${q})}"
+        th:text="${pageNumber} +'  '"
+        th:class="${curPage==pageNumber} ? not-active"></a>
+</div>
+</body>
+</html>

@@ -1,0 +1,14 @@
+truncate all_counters;
+truncate all_pages;
+truncate counter;
+truncate debuginfo;
+truncate heartbeat;
+truncate state;
+truncate webpage;
+
+
+CREATE TABLE `test` (
+  `id` varchar(128) NOT NULL,
+  `content` text NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4;

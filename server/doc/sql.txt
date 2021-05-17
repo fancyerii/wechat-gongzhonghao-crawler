@@ -1,0 +1,57 @@
+# run as root
+CREATE DATABASE `wechat`;
+CREATE USER 'wechat'@'localhost' IDENTIFIED BY 'chan_2o21';
+GRANT ALL PRIVILEGES ON wechat.* TO 'wechat'@'localhost';
+FLUSH PRIVILEGES;
+
+use wechat;
+CREATE TABLE `webpage` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `url` varchar(512) NOT NULL,
+  `title` varchar(1024) NOT NULL,
+  `pub_name` varchar(128) NOT NULL,
+  `pub_time` datetime DEFAULT NULL,
+  `html` mediumblob,
+  `content` mediumtext,
+  `last_update` datetime DEFAULT NULL,
+  `crawl_wechat_id` varchar(128) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `url` (`url`),
+  KEY `last_update` (`last_update`),
+  KEY `pub_name` (`pub_name`),
+  KEY `crawl_wechat_id` (`crawl_wechat_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE `state` (
+  `id` int NOT NULL,
+  `url` varchar(512) NOT NULL,
+  `pub_name` varchar(128) NOT NULL,
+  `title` varchar(1024) NOT NULL,
+  `crawl_state` tinyint NOT NULL, # 1: 未抓取网页, 0: 抓取成功, 2: 失败1次 3: 失败2次,...
+  `counter_state` tinyint NOT NULL, # 1: 未更新计数, 0: 更新成功, 3: 失败1次 ....
+  `first_add` datetime NOT NULL,
+  `last_update` datetime NOT NULL,
+  `sync_page` tinyint NOT NULL, # 0 未同步，1已同步
+  `sync_counter` tinyint NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `pub_name` (`pub_name`),
+  KEY `crawl_state` (`crawl_state`),
+  KEY `counter_state` (`counter_state`),
+  KEY `sync_page` (`sync_page`),
+  KEY `sync_counter` (`sync_counter`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `heartbeat` (
+  `crawl_wechat_id` varchar(128) NOT NULL,
+  `activity_type` varchar(256) NOT NULL,
+  `last_update` datetime NOT NULL,
+  PRIMARY KEY (`crawl_wechat_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE `debuginfo` (
+  `crawl_wechat_id` varchar(128) NOT NULL,
+  `content` MEDIUMTEXT,
+  PRIMARY KEY (`crawl_wechat_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4;

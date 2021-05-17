@@ -1,0 +1,40 @@
+<html>
+<head>
+<title th:text="'搜索--'+${wechatName}"></title>
+<style>
+.not-active {
+	  pointer-events: none;
+	  cursor: default;
+	  text-decoration: none;
+	  color: black;
+}
+span.hl{
+	color:red;
+}
+.hlline{
+	font-size:1.2em;
+}
+.item{
+	padding: 10px 0;
+}
+.item > p{
+	font-size: 1.5em;
+}
+.pagination{
+	text-align:center;
+	font-size: large;
+	padding-bottom: 50px;
+}
+.pagination a{
+	padding:0 10px;
+}
+</style>
+</style>
+</head>
+<body>
+<h1 th:utext="${title}"></h1>
+<p th:utext="'公众号：' +${pubName}"></p>
+<p th:utext="'发布时间：' +${pubDate}"></p>
+<div th:utext="${content}"></div>
+</body>
+</html>
