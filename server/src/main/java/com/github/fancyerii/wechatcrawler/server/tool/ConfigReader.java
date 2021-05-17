@@ -10,16 +10,18 @@ import java.util.Properties;
 @Slf4j
 public class ConfigReader {
     private static Properties props;
-    static{
+
+    static {
 
         try {
-            props=new Properties();
+            props = new Properties();
             props.load(new FileInputStream("conf/cfg.txt"));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }
-    public static String getProp(String key){
+
+    public static String getProp(String key) {
         return props.getProperty(key);
     }
 }

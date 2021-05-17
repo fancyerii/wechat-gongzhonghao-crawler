@@ -16,10 +16,10 @@ import java.security.spec.KeySpec;
 import java.util.Base64;
 
 public class Tool {
-    public static String getIp(Request req){
+    public static String getIp(Request req) {
         String ipAddress = req.headers("X-FORWARDED-FOR");
-        if(ipAddress==null){
-            ipAddress=req.ip();
+        if (ipAddress == null) {
+            ipAddress = req.ip();
         }
         return ipAddress;
     }
@@ -40,13 +40,13 @@ public class Tool {
         return new IvParameterSpec(iv);
     }
 
-    public static String generateIvBase64(){
+    public static String generateIvBase64() {
         byte[] iv = new byte[16];
         new SecureRandom().nextBytes(iv);
         return Base64.getEncoder().encodeToString(iv);
     }
 
-    public static IvParameterSpec getIvFromBase64(String s){
+    public static IvParameterSpec getIvFromBase64(String s) {
         byte[] iv = Base64.getDecoder().decode(s);
         return new IvParameterSpec(iv);
     }
@@ -75,14 +75,14 @@ public class Tool {
         return new String(plainText, "UTF-8");
     }
 
-    public static boolean isEmpty(String s){
+    public static boolean isEmpty(String s) {
         return s == null || s.isEmpty();
     }
 
-    public static Integer getInt(String s){
-        try{
+    public static Integer getInt(String s) {
+        try {
             return Integer.valueOf(s);
-        }catch(Exception e){
+        } catch (Exception e) {
             return null;
         }
     }
@@ -91,8 +91,8 @@ public class Tool {
         String input = "abc你好";
         String pass = "mypass";
         String salt = "hi-test";
-        String iv=Tool.generateIvBase64();
-        System.out.println("iv: "+iv);
+        String iv = Tool.generateIvBase64();
+        System.out.println("iv: " + iv);
         SecretKey key = Tool.getKeyFromPassword(pass, salt);
         IvParameterSpec ivParameterSpec = Tool.getIvFromBase64(iv);
         String algorithm = "AES/CBC/PKCS5Padding";
@@ -100,10 +100,10 @@ public class Tool {
         String plainText = Tool.decrypt(algorithm, cipherText, key, ivParameterSpec);
         System.out.println(cipherText);
         System.out.println(plainText);
-        SecretKey badKey=Tool.getKeyFromPassword("aaaa", salt);
+        SecretKey badKey = Tool.getKeyFromPassword("aaaa", salt);
         try {
             String badText = Tool.decrypt(algorithm, cipherText, badKey, ivParameterSpec);
-        }catch(Exception e){
+        } catch (Exception e) {
             System.out.println("bad key");
         }
 

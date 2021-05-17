@@ -19,7 +19,7 @@ import java.util.zip.GZIPOutputStream;
 @Slf4j
 public class MysqlArchiver {
 
-    public void insertTest(String id, String text) throws SQLException{
+    public void insertTest(String id, String text) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
@@ -37,7 +37,7 @@ public class MysqlArchiver {
         }
     }
 
-    public void initState(WebPage page) throws Exception{
+    public void initState(WebPage page) throws Exception {
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
@@ -47,9 +47,9 @@ public class MysqlArchiver {
                     "insert into state(id, crawl_state, counter_state, first_add, last_update, title, url, pub_name, " +
                             "sync_page, sync_counter)" +
                             " values(?,?,1,now(),now(),?,?,?,0,0)");
-            if(page.getHtml()!=null){
+            if (page.getHtml() != null) {
                 pstmt.setInt(2, 0);
-            }else{
+            } else {
                 pstmt.setInt(2, 1);
             }
             pstmt.setInt(1, page.getId());
@@ -63,18 +63,18 @@ public class MysqlArchiver {
         }
     }
 
-    public List<State> getUnCrawledUrls(int size) throws SQLException{
+    public List<State> getUnCrawledUrls(int size) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        List<State> states=new ArrayList<>();
+        List<State> states = new ArrayList<>();
         try {
             conn = PoolManager.getConnection();
             pstmt = conn.prepareStatement(
-                    "select * from state where crawl_state != 0 and crawl_state < 10 limit "+size);
+                    "select * from state where crawl_state != 0 and crawl_state < 10 limit " + size);
 
             rs = pstmt.executeQuery();
-            while(rs.next()){
+            while (rs.next()) {
                 states.add(this.populateState(rs));
             }
 
@@ -84,7 +84,7 @@ public class MysqlArchiver {
         return states;
     }
 
-    public String getWechatPass(String wechatId) throws SQLException{
+    public String getWechatPass(String wechatId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -94,7 +94,7 @@ public class MysqlArchiver {
                     "select * from wechat_pass where wechat_id=?");
             pstmt.setString(1, wechatId);
             rs = pstmt.executeQuery();
-            if(rs.next()){
+            if (rs.next()) {
                 return rs.getString("pass");
             }
         } finally {
@@ -104,13 +104,13 @@ public class MysqlArchiver {
     }
 
     private State populateState(ResultSet rs) throws SQLException {
-        int id=rs.getInt("id");
-        String url=rs.getString("url");
-        String pub_name=rs.getString("pub_name");
-        String title=rs.getString("title");
-        int crawl_state=rs.getInt("crawl_state");
-        int counter_state=rs.getInt("counter_state");
-        State state=new State();
+        int id = rs.getInt("id");
+        String url = rs.getString("url");
+        String pub_name = rs.getString("pub_name");
+        String title = rs.getString("title");
+        int crawl_state = rs.getInt("crawl_state");
+        int counter_state = rs.getInt("counter_state");
+        State state = new State();
 
         state.setId(id);
         state.setCounterState(counter_state);
@@ -123,17 +123,17 @@ public class MysqlArchiver {
         return state;
     }
 
-    public List<State> getNeedSyncCounters(int size) throws SQLException{
+    public List<State> getNeedSyncCounters(int size) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        List<State> states=new ArrayList<>();
+        List<State> states = new ArrayList<>();
         try {
             conn = PoolManager.getConnection();
             pstmt = conn.prepareStatement(
-                    "select * from state where sync_counter=0 and counter_state=0 limit "+size);
+                    "select * from state where sync_counter=0 and counter_state=0 limit " + size);
             rs = pstmt.executeQuery();
-            while(rs.next()){
+            while (rs.next()) {
                 states.add(this.populateState(rs));
             }
         } finally {
@@ -142,16 +142,16 @@ public class MysqlArchiver {
         return states;
     }
 
-    public void updateSyncedCounters(List<Integer> ids) throws SQLException{
+    public void updateSyncedCounters(List<Integer> ids) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
             conn = PoolManager.getConnection();
             StringBuilder sb = new StringBuilder("update state set sync_counter=1 where id in (");
-            for(int id:ids) {
-                sb.append(id+",");
+            for (int id : ids) {
+                sb.append(id + ",");
             }
-            String sql=sb.substring(0, sb.length()-1)+")";
+            String sql = sb.substring(0, sb.length() - 1) + ")";
             pstmt = conn.prepareStatement(sql);
             pstmt.executeUpdate();
         } finally {
@@ -159,16 +159,16 @@ public class MysqlArchiver {
         }
     }
 
-    public void updateSyncedPages(List<Integer> ids) throws SQLException{
+    public void updateSyncedPages(List<Integer> ids) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
             conn = PoolManager.getConnection();
             StringBuilder sb = new StringBuilder("update state set sync_page=1 where id in (");
-            for(int id:ids) {
-                sb.append(id+",");
+            for (int id : ids) {
+                sb.append(id + ",");
             }
-            String sql=sb.substring(0, sb.length()-1)+")";
+            String sql = sb.substring(0, sb.length() - 1) + ")";
             pstmt = conn.prepareStatement(sql);
             pstmt.executeUpdate();
         } finally {
@@ -176,7 +176,7 @@ public class MysqlArchiver {
         }
     }
 
-    public String getDebugInfo(String wechatId) throws SQLException{
+    public String getDebugInfo(String wechatId) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -186,7 +186,7 @@ public class MysqlArchiver {
                     "select * from debuginfo where crawl_wechat_id =? ");
             pstmt.setString(1, wechatId);
             rs = pstmt.executeQuery();
-            if(rs.next()){
+            if (rs.next()) {
                 return rs.getString("content");
             }
         } finally {
@@ -195,17 +195,17 @@ public class MysqlArchiver {
         return null;
     }
 
-    public List<State> getNeedSyncPages(int size) throws SQLException{
+    public List<State> getNeedSyncPages(int size) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        List<State> states=new ArrayList<>();
+        List<State> states = new ArrayList<>();
         try {
             conn = PoolManager.getConnection();
             pstmt = conn.prepareStatement(
-                    "select * from state where sync_page=0 and crawl_state=0 limit "+size);
+                    "select * from state where sync_page=0 and crawl_state=0 limit " + size);
             rs = pstmt.executeQuery();
-            while(rs.next()){
+            while (rs.next()) {
                 states.add(this.populateState(rs));
             }
         } finally {
@@ -214,18 +214,18 @@ public class MysqlArchiver {
         return states;
     }
 
-    public List<State> getStates(String pubName) throws SQLException{
+    public List<State> getStates(String pubName) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        List<State> states=new ArrayList<>();
+        List<State> states = new ArrayList<>();
         try {
             conn = PoolManager.getConnection();
             pstmt = conn.prepareStatement(
                     "select * from state where pub_name=? order by id desc limit 1000");
             pstmt.setString(1, pubName);
             rs = pstmt.executeQuery();
-            while(rs.next()){
+            while (rs.next()) {
                 states.add(this.populateState(rs));
             }
         } finally {
@@ -234,7 +234,7 @@ public class MysqlArchiver {
         return states;
     }
 
-    public void updateCounter(int id, String crawlWechatId, int readCount, int starCount, String rvs) throws Exception{
+    public void updateCounter(int id, String crawlWechatId, int readCount, int starCount, String rvs) throws Exception {
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
@@ -260,15 +260,15 @@ public class MysqlArchiver {
         }
     }
 
-    public int updateCounterState(int id, boolean succ) throws Exception{
+    public int updateCounterState(int id, boolean succ) throws Exception {
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
             conn = PoolManager.getConnection();
-            if(succ) {
+            if (succ) {
                 pstmt = conn.prepareStatement(
                         "update state set counter_state=0, last_update=now() where id=?");
-            }else{
+            } else {
                 //如果成功了则不再允许更新
                 pstmt = conn.prepareStatement("update state set counter_state=counter_state+1, last_update=now() " +
                         "where id=? and counter_state <> 0");
@@ -281,15 +281,15 @@ public class MysqlArchiver {
         }
     }
 
-    public int updateCrawlState(int id, boolean succ) throws Exception{
+    public int updateCrawlState(int id, boolean succ) throws Exception {
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
             conn = PoolManager.getConnection();
-            if(succ) {
+            if (succ) {
                 pstmt = conn.prepareStatement(
                         "update state set crawl_state=0, last_update=now() where id=?");
-            }else{
+            } else {
                 //如果成功了则不再允许更新
                 pstmt = conn.prepareStatement("update state set crawl_state=crawl_state+1, last_update=now() " +
                         "where id=? and crawl_state <> 0");
@@ -302,7 +302,7 @@ public class MysqlArchiver {
         }
     }
 
-    public void updateWebPageContent(int id, String html, String content, java.util.Date pubDate) throws Exception{
+    public void updateWebPageContent(int id, String html, String content, java.util.Date pubDate) throws Exception {
         Connection conn = null;
 
         PreparedStatement pstmt = null;
@@ -329,7 +329,7 @@ public class MysqlArchiver {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        HeartBeat hb=new HeartBeat();
+        HeartBeat hb = new HeartBeat();
         hb.setWechatId(wechatId);
         try {
             conn = PoolManager.getConnection();
@@ -349,13 +349,13 @@ public class MysqlArchiver {
     }
 
     public void updateHeartbeat(String wechatId, String type) throws SQLException {
-        HeartBeat hb=new HeartBeat();
+        HeartBeat hb = new HeartBeat();
         hb.setWechatId(wechatId);
         hb.setActivityType(type);
         updateHeartbeat(hb);
     }
 
-    public void updateHeartbeat(HeartBeat hb) throws SQLException{
+    public void updateHeartbeat(HeartBeat hb) throws SQLException {
         Connection conn = null;
 
         PreparedStatement pstmt = null;
@@ -373,7 +373,7 @@ public class MysqlArchiver {
         }
     }
 
-    public void upsertCounters(Counter counter) throws Exception{
+    public void upsertCounters(Counter counter) throws Exception {
         Connection conn = null;
 
         PreparedStatement pstmt = null;
@@ -402,7 +402,7 @@ public class MysqlArchiver {
         }
     }
 
-    public void upsertDebugInfo(String wechatId, String json) throws SQLException{
+    public void upsertDebugInfo(String wechatId, String json) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
@@ -421,7 +421,7 @@ public class MysqlArchiver {
         }
     }
 
-    public String getDebugInfo() throws SQLException{
+    public String getDebugInfo() throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -431,10 +431,10 @@ public class MysqlArchiver {
                     "select * from debuginfo limit 1");
 
             rs = pstmt.executeQuery();
-            if(rs.next()){
-                String id=rs.getString("crawl_wechat_id");
-                String content=rs.getString("content");
-                Map<String,Object> data=new HashMap<>();
+            if (rs.next()) {
+                String id = rs.getString("crawl_wechat_id");
+                String content = rs.getString("content");
+                Map<String, Object> data = new HashMap<>();
                 data.put("id", id);
                 data.put("info", content);
                 return new Gson().toJson(data);
@@ -445,7 +445,7 @@ public class MysqlArchiver {
         return "";
     }
 
-    public void upsertAllWebPages(WebPage page) throws Exception{
+    public void upsertAllWebPages(WebPage page) throws Exception {
         Connection conn = null;
 
         PreparedStatement pstmt = null;
@@ -476,13 +476,13 @@ public class MysqlArchiver {
         }
     }
 
-    private DateFormat sdf=new SimpleDateFormat("yyyy-MM-dd");
+    private DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
-    private DateFormat sdf2=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private DateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     public void downloadJson(String wechatName, String startDate, String endDate, OutputStream os,
                              String fields) throws Exception {
-        String sqlWhere=buildWhere(wechatName, startDate,endDate);
+        String sqlWhere = buildWhere(wechatName, startDate, endDate);
         Connection conn = null;
 
         PreparedStatement pstmt = null;
@@ -490,41 +490,41 @@ public class MysqlArchiver {
         try {
             conn = PoolManager.getConnection();
             pstmt = conn.prepareStatement("select * from webpage "
-                            +sqlWhere, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+                    + sqlWhere, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
             pstmt.setFetchSize(Integer.MIN_VALUE);
-            if(!wechatName.isEmpty()){
+            if (!wechatName.isEmpty()) {
                 pstmt.setString(1, wechatName);
             }
-            rs=pstmt.executeQuery();
-            Gson gson=new Gson();
-            Set<String> outputFields=null;
-            if(fields!=null && !fields.trim().isEmpty()){
-                fields=fields.trim();
-                outputFields=new HashSet<>();
-                String[] fs=fields.split(",");
-                for(String field:fs){
+            rs = pstmt.executeQuery();
+            Gson gson = new Gson();
+            Set<String> outputFields = null;
+            if (fields != null && !fields.trim().isEmpty()) {
+                fields = fields.trim();
+                outputFields = new HashSet<>();
+                String[] fs = fields.split(",");
+                for (String field : fs) {
                     outputFields.add(field);
                 }
             }
-            while(rs.next()){
+            while (rs.next()) {
                 WebPage page = this.populateWebPage(rs);
-                Map<String,Object> data=new HashMap<>();
-                if(outputFields == null || outputFields.contains("title")) {
+                Map<String, Object> data = new HashMap<>();
+                if (outputFields == null || outputFields.contains("title")) {
                     data.put("title", page.getTitle());
                 }
-                if(outputFields == null || outputFields.contains("pubName")) {
+                if (outputFields == null || outputFields.contains("pubName")) {
                     data.put("pubName", page.getPubName());
                 }
-                if(outputFields == null || outputFields.contains("pubTime")) {
+                if (outputFields == null || outputFields.contains("pubTime")) {
                     data.put("pubTime", sdf2.format(page.getPubTime()));
                 }
-                if(outputFields == null || outputFields.contains("content")) {
+                if (outputFields == null || outputFields.contains("content")) {
                     data.put("content", page.getContent());
                 }
-                if(outputFields == null || outputFields.contains("html")) {
+                if (outputFields == null || outputFields.contains("html")) {
                     data.put("html", page.getHtml());
                 }
-                String s=gson.toJson(data)+"\n";
+                String s = gson.toJson(data) + "\n";
                 os.write(s.getBytes("UTF-8"));
             }
 
@@ -533,45 +533,45 @@ public class MysqlArchiver {
         }
     }
 
-    private String buildWhere(String wechatName, String startDate, String endDate){
+    private String buildWhere(String wechatName, String startDate, String endDate) {
         try {
             sdf.parse(startDate);
-        }catch(Exception e){
-            startDate="";
+        } catch (Exception e) {
+            startDate = "";
         }
-        try{
+        try {
             sdf.parse(endDate);
-        }catch(Exception e){
-            endDate="";
+        } catch (Exception e) {
+            endDate = "";
         }
 
         String sqlWhere = "";
-        boolean hasWhere=false;
-        if(!wechatName.isEmpty()){
-            hasWhere=true;
+        boolean hasWhere = false;
+        if (!wechatName.isEmpty()) {
+            hasWhere = true;
             sqlWhere = " where pub_name=? ";
         }
-        if(!startDate.isEmpty()){
-            if(hasWhere){
-                sqlWhere += " and pub_time >= '"+startDate+"' ";
-            }else{
-                sqlWhere += " where pub_time >= '"+startDate+"' ";
-                hasWhere=true;
+        if (!startDate.isEmpty()) {
+            if (hasWhere) {
+                sqlWhere += " and pub_time >= '" + startDate + "' ";
+            } else {
+                sqlWhere += " where pub_time >= '" + startDate + "' ";
+                hasWhere = true;
             }
         }
-        if(!endDate.isEmpty()){
-            if(hasWhere){
-                sqlWhere += " and pub_time >= "+startDate+" ";
-            }else{
-                sqlWhere += " where pub_time <= "+endDate+" ";
+        if (!endDate.isEmpty()) {
+            if (hasWhere) {
+                sqlWhere += " and pub_time >= " + startDate + " ";
+            } else {
+                sqlWhere += " where pub_time <= " + endDate + " ";
             }
         }
         return sqlWhere;
     }
 
     public WebPageSearchResult search(String wechatName, String startDate, String endDate,
-                                      int offset, int limit){
-        String sqlWhere=buildWhere(wechatName, startDate, endDate);
+                                      int offset, int limit) {
+        String sqlWhere = buildWhere(wechatName, startDate, endDate);
         WebPageSearchResult sr = new WebPageSearchResult();
         try {
             sr.setTotal(getTotalCount(sqlWhere, wechatName));
@@ -587,23 +587,23 @@ public class MysqlArchiver {
 
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        List<WebPageSearchItem> items=new ArrayList<>(limit);
+        List<WebPageSearchItem> items = new ArrayList<>(limit);
         try {
             conn = PoolManager.getConnection();
-            pstmt = conn.prepareStatement("select id, pub_name, pub_time, title, url from webpage "+sqlWhere
-                    +"order by id desc limit "+limit+" offset "+offset);
-            if(!wechatName.isEmpty()){
+            pstmt = conn.prepareStatement("select id, pub_name, pub_time, title, url from webpage " + sqlWhere
+                    + "order by id desc limit " + limit + " offset " + offset);
+            if (!wechatName.isEmpty()) {
                 pstmt.setString(1, wechatName);
             }
-            rs=pstmt.executeQuery();
-            while(rs.next()){
-                WebPageSearchItem item=new WebPageSearchItem();
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                WebPageSearchItem item = new WebPageSearchItem();
                 items.add(item);
                 item.setId(rs.getInt("id"));
                 item.setTitle(rs.getString("title"));
                 item.setUrl(rs.getString("url"));
                 item.setWechatName(rs.getString("pub_name"));
-                Date d=DBUtils.timestamp2Date(rs.getTimestamp("pub_time"));
+                Date d = DBUtils.timestamp2Date(rs.getTimestamp("pub_time"));
 
                 item.setPubDate(sdf.format(d));
             }
@@ -621,14 +621,14 @@ public class MysqlArchiver {
         ResultSet rs = null;
         try {
             conn = PoolManager.getConnection();
-            pstmt = conn.prepareStatement("select count(*) from webpage "+sqlWhere);
-            if(!wechatName.isEmpty()){
+            pstmt = conn.prepareStatement("select count(*) from webpage " + sqlWhere);
+            if (!wechatName.isEmpty()) {
                 pstmt.setString(1, wechatName);
             }
-            rs=pstmt.executeQuery();
-            if(rs.next()){
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
                 return rs.getLong(1);
-            }else {
+            } else {
                 return 0;
             }
         } finally {
@@ -636,7 +636,7 @@ public class MysqlArchiver {
         }
     }
 
-    public int addUrlToWebPage(WebPage page) throws Exception{
+    public int addUrlToWebPage(WebPage page) throws Exception {
         Connection conn = null;
 
         PreparedStatement pstmt = null;
@@ -664,14 +664,13 @@ public class MysqlArchiver {
             rs = pstmt.getGeneratedKeys();
             if (rs.next()) {
                 return rs.getInt(1);
-            }else{
+            } else {
                 throw new RuntimeException("bug!!!");
             }
         } finally {
             DBUtils.closeAll(conn, pstmt, rs);
         }
     }
-
 
 
     private byte[] gzipHtml(String html) throws IOException {
@@ -700,7 +699,7 @@ public class MysqlArchiver {
         return new String(buffer.toByteArray(), "UTF8");
     }
 
-    public WebPage getAllPage(String url){
+    public WebPage getAllPage(String url) {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -711,7 +710,7 @@ public class MysqlArchiver {
             pstmt.setString(1, url);
             rs = pstmt.executeQuery();
             if (rs.next()) {
-                WebPage page=new WebPage();
+                WebPage page = new WebPage();
                 page.setUrl(rs.getString("url"));
                 page.setTitle(rs.getString("title"));
                 page.setPubName(rs.getString("pub_name"));
@@ -732,7 +731,7 @@ public class MysqlArchiver {
     }
 
     private WebPage populateWebPage(ResultSet rs) throws Exception {
-        WebPage page=new WebPage();
+        WebPage page = new WebPage();
         page.setUrl(rs.getString("url"));
         page.setId(rs.getInt("id"));
         page.setTitle(rs.getString("title"));
@@ -745,9 +744,9 @@ public class MysqlArchiver {
         return page;
     }
 
-    public List<Counter> getCounters(List<Integer> ids){
-        if(ids==null || ids.isEmpty()) return new ArrayList<>(0);
-        List<Counter> counters=new ArrayList<>(ids.size());
+    public List<Counter> getCounters(List<Integer> ids) {
+        if (ids == null || ids.isEmpty()) return new ArrayList<>(0);
+        List<Counter> counters = new ArrayList<>(ids.size());
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -755,16 +754,16 @@ public class MysqlArchiver {
             conn = PoolManager.getConnection();
             StringBuilder sb = new StringBuilder("select counter.*, webpage.url from counter join webpage " +
                     "on counter.id=webpage.id where counter.id in (");
-            for(int id:ids) {
-                sb.append(id+",");
+            for (int id : ids) {
+                sb.append(id + ",");
             }
-            String sql=sb.substring(0, sb.length()-1)+")";
+            String sql = sb.substring(0, sb.length() - 1) + ")";
 
 
             pstmt = conn.prepareStatement(sql);
             rs = pstmt.executeQuery();
             while (rs.next()) {
-                Counter counter=new Counter();
+                Counter counter = new Counter();
                 counters.add(counter);
                 counter.setUrl(rs.getString("url"));
                 counter.setReadCount(rs.getInt("read_count"));
@@ -782,19 +781,19 @@ public class MysqlArchiver {
         return counters;
     }
 
-    public List<WebPage> getWebPages(List<Integer> ids){
-        if(ids==null || ids.isEmpty()) return new ArrayList<>(0);
-        List<WebPage> pages=new ArrayList<>(ids.size());
+    public List<WebPage> getWebPages(List<Integer> ids) {
+        if (ids == null || ids.isEmpty()) return new ArrayList<>(0);
+        List<WebPage> pages = new ArrayList<>(ids.size());
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         try {
             conn = PoolManager.getConnection();
             StringBuilder sb = new StringBuilder("select * from webpage where id in (");
-            for(int id:ids) {
-                sb.append(id+",");
+            for (int id : ids) {
+                sb.append(id + ",");
             }
-            String sql=sb.substring(0, sb.length()-1)+")";
+            String sql = sb.substring(0, sb.length() - 1) + ")";
 
 
             pstmt = conn.prepareStatement(sql);
@@ -836,8 +835,8 @@ public class MysqlArchiver {
     }
 
     public static void main(String[] args) throws Exception {
-        PoolManager.StartPool("conf","wechat");
-        MysqlArchiver archiver=new MysqlArchiver();
+        PoolManager.StartPool("conf", "wechat");
+        MysqlArchiver archiver = new MysqlArchiver();
 //        WebPage page=archiver.getWebPage(3);
 //        String xml=page.getContent();
 //        XmlParser parser=new XmlParser();
@@ -851,7 +850,7 @@ public class MysqlArchiver {
 //                System.out.println(i + "->" + p);
 //            }
 //        }
-        WebPage page=new WebPage();
+        WebPage page = new WebPage();
         page.setCrawlWechatId("lili");
         page.setUrl("http://www.com");
         page.setPubName("环球2");

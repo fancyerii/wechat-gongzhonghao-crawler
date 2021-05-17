@@ -27,8 +27,8 @@ public class WechatCrawlerServer {
     public static void main(String[] args) throws Exception {
         port(4567);
         staticFiles.location("/public");
-        PoolManager.StartPool("conf","wechat");
-        MysqlArchiver archiver=new MysqlArchiver();
+        PoolManager.StartPool("conf", "wechat");
+        MysqlArchiver archiver = new MysqlArchiver();
         //get("/searchview", searchView(ts), new ThymeleafTemplateEngine());
         post("/getstate", "application/json", getState(archiver), gson::toJson);
         get("/updatecrawlstate", "application/json", updateCrawlState(archiver), gson::toJson);
@@ -47,39 +47,39 @@ public class WechatCrawlerServer {
             }
             wechatName = wechatName.trim();
             String startDate = request.queryParams("startDate");
-            if(startDate==null){
+            if (startDate == null) {
                 startDate = "";
             }
             startDate = startDate.trim();
             String endDate = request.queryParams("endDate");
-            if(endDate==null){
+            if (endDate == null) {
                 endDate = "";
             }
             endDate = endDate.trim();
-            String fields=request.queryParams("fields");
-            if(fields==null){
-                fields="title,content,url,pubName,pubTime";
+            String fields = request.queryParams("fields");
+            if (fields == null) {
+                fields = "title,content,url,pubName,pubTime";
             }
             response.raw().setContentType("application/octet-stream");
-            response.raw().setHeader("Content-Disposition","attachment; filename="+"data.json");
+            response.raw().setHeader("Content-Disposition", "attachment; filename=" + "data.json");
 
-            OutputStream os=response.raw().getOutputStream();
+            OutputStream os = response.raw().getOutputStream();
             archiver.downloadJson(wechatName, startDate, endDate, os, fields);
             os.close();
             return null;
         }));
         Thread crawler = new Thread(new WebContentCrawler(archiver));
         crawler.start();
-        String doSync= ConfigReader.getProp("do_sync");
-        if("true".equalsIgnoreCase(doSync)) {
+        String doSync = ConfigReader.getProp("do_sync");
+        if ("true".equalsIgnoreCase(doSync)) {
             new Thread(new PageAndCounterSyncer(archiver)).start();
         }
 
     }
 
-    static Gson gson=new GsonBuilder().registerTypeAdapter(Date.class, new MyDateTypeAdapter()).create();
-    static JsonParser parser=new JsonParser();
-    static SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    static Gson gson = new GsonBuilder().registerTypeAdapter(Date.class, new MyDateTypeAdapter()).create();
+    static JsonParser parser = new JsonParser();
+    static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     private static TemplateViewRoute viewPage(final MysqlArchiver archiver) {
         return new TemplateViewRoute() {
@@ -87,20 +87,20 @@ public class WechatCrawlerServer {
             public ModelAndView handle(Request request, Response response) throws Exception {
 
                 String id = request.queryParams("id");
-                List<Integer> idList=new ArrayList<>(1);
+                List<Integer> idList = new ArrayList<>(1);
                 idList.add(Integer.valueOf(id));
-                List<WebPage> pages=archiver.getWebPages(idList);
-                Map<String, Object> model=new HashMap<>();
-                if(pages.size()==1){
-                    WebPage page=pages.get(0);
-                    String content=page.getContent();
-                    if(content==null) content="";
-                    content=content.replace("\n", "<br/>");
+                List<WebPage> pages = archiver.getWebPages(idList);
+                Map<String, Object> model = new HashMap<>();
+                if (pages.size() == 1) {
+                    WebPage page = pages.get(0);
+                    String content = page.getContent();
+                    if (content == null) content = "";
+                    content = content.replace("\n", "<br/>");
                     model.put("content", content);
                     model.put("title", page.getTitle());
-                    if(page.getPubTime()!=null){
+                    if (page.getPubTime() != null) {
                         model.put("pubDate", sdf.format(page.getPubTime()));
-                    }else{
+                    } else {
                         model.put("pubDate", "未知");
                     }
                     model.put("pubName", page.getPubName());
@@ -113,14 +113,15 @@ public class WechatCrawlerServer {
 
     private static TemplateViewRoute searchView(final MysqlArchiver archiver) {
         return new TemplateViewRoute() {
-            int pageWindow=3;
+            int pageWindow = 3;
+
             private Map<String, Object> doSearch(String wechatName, String startDate, String endDate, int page, int numPage) throws Exception {
                 log.info("searchView wechatName={}, page={}, start={}, end={}", wechatName, page, startDate, endDate);
-                WebPageSearchResult sr=archiver.search(wechatName, startDate, endDate, (page-1)*numPage, page*numPage);
-                List<WebPageSearchItem> items=sr.getItems();
-                if(items==null) items=new ArrayList<>(0);
-                int totalPage = (Math.min(10000, (int)sr.getTotal()) - 1) / numPage + 1;
-                Map<String, Object> model=new HashMap<>();
+                WebPageSearchResult sr = archiver.search(wechatName, startDate, endDate, (page - 1) * numPage, page * numPage);
+                List<WebPageSearchItem> items = sr.getItems();
+                if (items == null) items = new ArrayList<>(0);
+                int totalPage = (Math.min(10000, (int) sr.getTotal()) - 1) / numPage + 1;
+                Map<String, Object> model = new HashMap<>();
                 model.put("totalCount", sr.getTotal());
                 model.put("wechatName", wechatName);
                 model.put("items", items);
@@ -137,6 +138,7 @@ public class WechatCrawlerServer {
                 model.put("pageNumbers", pageNumbers);
                 return model;
             }
+
             @Override
             public ModelAndView handle(Request request, Response response) throws Exception {
 
@@ -146,12 +148,12 @@ public class WechatCrawlerServer {
                 }
                 wechatName = wechatName.trim();
                 String startDate = request.queryParams("startDate");
-                if(startDate==null){
+                if (startDate == null) {
                     startDate = "";
                 }
                 startDate = startDate.trim();
                 String endDate = request.queryParams("endDate");
-                if(endDate==null){
+                if (endDate == null) {
                     endDate = "";
                 }
                 endDate = endDate.trim();
@@ -163,37 +165,36 @@ public class WechatCrawlerServer {
                 }
 
 
-
-                Map<String, Object> model = doSearch(wechatName,startDate, endDate, page, 10);
+                Map<String, Object> model = doSearch(wechatName, startDate, endDate, page, 10);
                 return new ModelAndView(model, "search"); // located in resources/templates
             }
 
         };
     }
 
-    private static Route addUrl(final MysqlArchiver archiver){
+    private static Route addUrl(final MysqlArchiver archiver) {
         return (request, response) -> {
-            String body=request.body();
-            Map<String,Object> result=new HashMap<>();
+            String body = request.body();
+            Map<String, Object> result = new HashMap<>();
 
             try {
-                WebPage page=gson.fromJson(body, WebPage.class);
-                if(Tool.isEmpty(page.getCrawlWechatId())){
+                WebPage page = gson.fromJson(body, WebPage.class);
+                if (Tool.isEmpty(page.getCrawlWechatId())) {
                     result.put("success", false);
                     result.put("msg", "crawlWeichatId不能空");
                     return result;
                 }
-                if(Tool.isEmpty(page.getUrl())){
+                if (Tool.isEmpty(page.getUrl())) {
                     result.put("success", false);
                     result.put("msg", "url不能空");
                     return result;
                 }
-                if(Tool.isEmpty(page.getTitle())){
+                if (Tool.isEmpty(page.getTitle())) {
                     result.put("success", false);
                     result.put("msg", "title不能空");
                     return result;
                 }
-                if(page.getHtml()!=null){
+                if (page.getHtml() != null) {
                     page.setContent(WebContentCrawler.extHtml(page.getHtml()));
                 }
                 int id = archiver.addUrlToWebPage(page);
@@ -202,7 +203,7 @@ public class WechatCrawlerServer {
                 archiver.initState(page);
                 archiver.updateHeartbeat(page.getCrawlWechatId(), "add-url");
                 result.put("success", true);
-            }catch(Exception e){
+            } catch (Exception e) {
                 log.error(e.getMessage(), e);
                 result.put("success", false);
                 result.put("msg", e.getMessage());
@@ -211,21 +212,21 @@ public class WechatCrawlerServer {
         };
     }
 
-    private static Route upsertDebugInfo(final MysqlArchiver archiver){
+    private static Route upsertDebugInfo(final MysqlArchiver archiver) {
         return (request, response) -> {
-            String body=request.body();
-            Map<String,Object> result=new HashMap<>();
+            String body = request.body();
+            Map<String, Object> result = new HashMap<>();
 
             try {
-                String wechatId=request.queryParams("wechatId");
-                if(Tool.isEmpty(wechatId)){
+                String wechatId = request.queryParams("wechatId");
+                if (Tool.isEmpty(wechatId)) {
                     result.put("success", false);
                     result.put("msg", "wechatId不能空");
                     return result;
                 }
                 archiver.upsertDebugInfo(wechatId, body);
                 result.put("success", true);
-            }catch(Exception e){
+            } catch (Exception e) {
                 result.put("success", false);
                 result.put("msg", e.getMessage());
             }
@@ -233,106 +234,107 @@ public class WechatCrawlerServer {
         };
     }
 
-    private static Route updateCounter(final MysqlArchiver archiver){
+    private static Route updateCounter(final MysqlArchiver archiver) {
         return (request, response) -> {
-            Map<String,Object> result=new HashMap<>();
-            String body=request.body();
+            Map<String, Object> result = new HashMap<>();
+            String body = request.body();
             try {
-                JsonObject jo =parser.parse(body).getAsJsonObject();
-                String state=jo.get("state").getAsString();
-                String wechatId=jo.get("wechatId").getAsString();
-                if(Tool.isEmpty(wechatId)){
+                JsonObject jo = parser.parse(body).getAsJsonObject();
+                String state = jo.get("state").getAsString();
+                String wechatId = jo.get("wechatId").getAsString();
+                if (Tool.isEmpty(wechatId)) {
                     result.put("success", false);
                     result.put("msg", "wechatId不能空");
                     return result;
                 }
                 Integer id = Tool.getInt(jo.get("id").getAsString());
-                if(id == null){
+                if (id == null) {
                     result.put("success", false);
                     result.put("msg", "id为空或者非整数");
                     return result;
                 }
 
-                if(Tool.isEmpty(state)){
+                if (Tool.isEmpty(state)) {
                     result.put("success", false);
                     result.put("msg", "state不能空");
                     return result;
                 }
-                boolean bState=false;
-                if(state.equalsIgnoreCase("true")){
+                boolean bState = false;
+                if (state.equalsIgnoreCase("true")) {
                     Integer readCount = Tool.getInt(jo.get("read").getAsString());
-                    if(readCount==null){
+                    if (readCount == null) {
                         result.put("success", false);
                         result.put("msg", "read为空或者非整数");
                         return result;
                     }
                     Integer starCount = Tool.getInt(jo.get("star").getAsString());
-                    if(starCount==null){
+                    if (starCount == null) {
                         result.put("success", false);
                         result.put("msg", "star为空或者非整数");
                         return result;
                     }
-                    bState=true;
-                    String rvs=jo.get("rvs").toString();
+                    bState = true;
+                    String rvs = jo.get("rvs").toString();
                     archiver.updateCounter(id, wechatId, readCount, starCount, rvs);
-                }else if(state.equalsIgnoreCase("false")){
-                    bState=false;
-                }else{
+                } else if (state.equalsIgnoreCase("false")) {
+                    bState = false;
+                } else {
                     result.put("success", false);
-                    result.put("msg", "state in valid: "+state);
+                    result.put("msg", "state in valid: " + state);
                     return result;
                 }
                 int updateCount = archiver.updateCounterState(id, bState);
                 archiver.updateHeartbeat(wechatId, "update-counter");
                 result.put("success", true);
                 result.put("update", updateCount);
-            }catch(Exception e){
+            } catch (Exception e) {
                 result.put("msg", e.getMessage());
                 result.put("success", false);
             }
             return result;
         };
     }
-    private static Route updateCrawlState(final MysqlArchiver archiver){
+
+    private static Route updateCrawlState(final MysqlArchiver archiver) {
         return (request, response) -> {
-            Map<String,Object> result=new HashMap<>();
+            Map<String, Object> result = new HashMap<>();
 
             try {
                 String idStr = request.queryParams("id");
-                String state=request.queryParams("state");
-                if(Tool.isEmpty(idStr)){
+                String state = request.queryParams("state");
+                if (Tool.isEmpty(idStr)) {
                     result.put("success", false);
                     result.put("msg", "id不能空");
                     return result;
                 }
                 int id;
-                try{
-                    id=Integer.valueOf(idStr);
-                }catch(Exception e){
+                try {
+                    id = Integer.valueOf(idStr);
+                } catch (Exception e) {
                     result.put("success", false);
-                    result.put("msg", "id in valid: "+idStr);
+                    result.put("msg", "id in valid: " + idStr);
                     return result;
                 }
 
-                if(Tool.isEmpty(state)){
+                if (Tool.isEmpty(state)) {
                     result.put("success", false);
                     result.put("msg", "state不能空");
                     return result;
                 }
-                boolean bState=false;
-                if(state.equalsIgnoreCase("true")){
-                    bState=true;
-                }else if(state.equalsIgnoreCase("false")){
-                    bState=false;
-                }else{
+                boolean bState = false;
+                if (state.equalsIgnoreCase("true")) {
+                    bState = true;
+                } else if (state.equalsIgnoreCase("false")) {
+                    bState = false;
+                } else {
                     result.put("success", false);
-                    result.put("msg", "state in valid: "+state);
+                    result.put("msg", "state in valid: " + state);
                     return result;
                 }
                 int updateCount = archiver.updateCrawlState(id, bState);
                 result.put("success", true);
                 result.put("update", updateCount);
-            }catch(Exception e){
+            } catch (Exception e) {
                 result.put("msg", e.getMessage());
                 result.put("success", false);
             }
@@ -340,14 +342,14 @@ public class WechatCrawlerServer {
         };
     }
 
-    private static Route getState(final MysqlArchiver archiver){
+    private static Route getState(final MysqlArchiver archiver) {
         return (request, response) -> {
-            String body=request.body();
-            Map<String,Object> result=new HashMap<>();
+            String body = request.body();
+            Map<String, Object> result = new HashMap<>();
 
             try {
-                WebPage page=gson.fromJson(body, WebPage.class);
-                if(Tool.isEmpty(page.getPubName())){
+                WebPage page = gson.fromJson(body, WebPage.class);
+                if (Tool.isEmpty(page.getPubName())) {
                     result.put("success", false);
                     result.put("msg", "pubName不能空");
                     return result;
@@ -355,7 +357,7 @@ public class WechatCrawlerServer {
 
                 result.put("data", archiver.getStates(page.getPubName()));
                 result.put("success", true);
-            }catch(Exception e){
+            } catch (Exception e) {
                 result.put("msg", e.getMessage());
                 result.put("success", false);
                 result.put("body", body);
@@ -364,19 +366,19 @@ public class WechatCrawlerServer {
         };
     }
 
-    private static Route heartBeat(final MysqlArchiver archiver){
+    private static Route heartBeat(final MysqlArchiver archiver) {
         return (request, response) -> {
-            String body=request.body();
-            Map<String,Object> result=new HashMap<>();
+            String body = request.body();
+            Map<String, Object> result = new HashMap<>();
 
             try {
-                HeartBeat hb=gson.fromJson(body, HeartBeat.class);
-                if(Tool.isEmpty(hb.getWechatId())){
+                HeartBeat hb = gson.fromJson(body, HeartBeat.class);
+                if (Tool.isEmpty(hb.getWechatId())) {
                     result.put("success", false);
                     result.put("msg", "wechatId不能空");
                     return result;
                 }
-                if(Tool.isEmpty(hb.getActivityType())){
+                if (Tool.isEmpty(hb.getActivityType())) {
                     result.put("success", false);
                     result.put("msg", "activityType不能空");
                     return result;
@@ -384,7 +386,7 @@ public class WechatCrawlerServer {
 
                 archiver.updateHeartbeat(hb);
                 result.put("success", true);
-            }catch(Exception e){
+            } catch (Exception e) {
                 //log.error(e.getMessage(), e);
                 result.put("success", false);
                 result.put("msg", e.getMessage());

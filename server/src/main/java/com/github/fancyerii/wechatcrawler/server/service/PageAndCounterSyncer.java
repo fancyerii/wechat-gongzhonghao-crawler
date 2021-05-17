@@ -23,76 +23,80 @@ import java.util.Date;
 import java.util.List;
 
 @Slf4j
-public class PageAndCounterSyncer implements Runnable{
+public class PageAndCounterSyncer implements Runnable {
     private MysqlArchiver archiver;
     private int pageSize = 20;
     private int counterSize = 200;
     private long crawlInterval = 3000;
-    private long failInterval = 5*60*1000L;
+    private long failInterval = 5 * 60 * 1000L;
     private long emptySleep = 60 * 1000L;
     private Gson gson;
-    private JsonParser jp=new JsonParser();
+    private JsonParser jp = new JsonParser();
     private SecretKey key;
     private IvParameterSpec ivParameterSpec;
     private HttpClientFetcher fetcher;
     private String serverUrl;
     private String wechatId;
-    public PageAndCounterSyncer(MysqlArchiver archiver) throws Exception{
+
+    public PageAndCounterSyncer(MysqlArchiver archiver) throws Exception {
         this.archiver = archiver;
-        wechatId=ConfigReader.getProp("wechat_id");
-        String pass=ConfigReader.getProp("enc_pass");
-        String salt=ConfigReader.getProp("salt");
-        String iv=ConfigReader.getProp("iv");
-        serverUrl=ConfigReader.getProp("server_url");
+        wechatId = ConfigReader.getProp("wechat_id");
+        String pass = ConfigReader.getProp("enc_pass");
+        String salt = ConfigReader.getProp("salt");
+        String iv = ConfigReader.getProp("iv");
+        serverUrl = ConfigReader.getProp("server_url");
         key = Tool.getKeyFromPassword(pass, salt);
         ivParameterSpec = Tool.getIvFromBase64(iv);
-        fetcher=new HttpClientFetcher(WebContentCrawler.class.getName());
+        fetcher = new HttpClientFetcher(WebContentCrawler.class.getName());
 
         fetcher.init();
-        gson=new GsonBuilder().registerTypeAdapter(Date.class, new MyDateTypeAdapter()).create();
+        gson = new GsonBuilder().registerTypeAdapter(Date.class, new MyDateTypeAdapter()).create();
     }
+
     String algorithm = "AES/CBC/PKCS5Padding";
-    private String encPages(List<WebPage> pages) throws Exception{
-        String s=gson.toJson(pages);
 
-        String cipherText = Tool.encrypt(algorithm, s, key, ivParameterSpec);
-
-        return cipherText;
-    }
-    private String encCounters(List<Counter> counters) throws Exception{
-        String s=gson.toJson(counters);
+    private String encPages(List<WebPage> pages) throws Exception {
+        String s = gson.toJson(pages);
 
         String cipherText = Tool.encrypt(algorithm, s, key, ivParameterSpec);
 
         return cipherText;
     }
 
-    private int syncCounters(){
+    private String encCounters(List<Counter> counters) throws Exception {
+        String s = gson.toJson(counters);
+
+        String cipherText = Tool.encrypt(algorithm, s, key, ivParameterSpec);
+
+        return cipherText;
+    }
+
+    private int syncCounters() {
         List<State> states = new ArrayList<>(0);
         try {
             states = archiver.getNeedSyncCounters(counterSize);
         } catch (SQLException e) {
             log.error(e.getMessage(), e);
         }
-        List<Integer> ids=new ArrayList<>(states.size());
-        for(State state:states){
+        List<Integer> ids = new ArrayList<>(states.size());
+        for (State state : states) {
             ids.add(state.getId());
         }
-        List<Counter> counters=archiver.getCounters(ids);
-        if(!counters.isEmpty()){
-            boolean syncSuccess=false;
+        List<Counter> counters = archiver.getCounters(ids);
+        if (!counters.isEmpty()) {
+            boolean syncSuccess = false;
             try {
-                String s=this.encCounters(counters);
-                String rsp=null;
-                String url=serverUrl + "/synccounters?wechatId=" +
+                String s = this.encCounters(counters);
+                String rsp = null;
+                String url = serverUrl + "/synccounters?wechatId=" +
                         java.net.URLEncoder.encode(wechatId, "UTF-8");
                 rsp = fetcher.httpPost(url
                         , s, null);
-                JsonObject jo=jp.parse(rsp).getAsJsonObject();
-                syncSuccess=jo.get("success").getAsBoolean();
-                if(syncSuccess){
+                JsonObject jo = jp.parse(rsp).getAsJsonObject();
+                syncSuccess = jo.get("success").getAsBoolean();
+                if (syncSuccess) {
                     archiver.updateSyncedCounters(ids);
-                }else{
+                } else {
                     log.error(rsp);
                 }
             } catch (Exception e) {
@@ -110,18 +114,18 @@ public class PageAndCounterSyncer implements Runnable{
         return counters.size();
     }
 
-    private String syncDebugInfo(String lastInfo){
+    private String syncDebugInfo(String lastInfo) {
         String info;
         try {
-            info=archiver.getDebugInfo(wechatId);
+            info = archiver.getDebugInfo(wechatId);
         } catch (SQLException e) {
             log.error(e.getMessage(), e);
             return null;
         }
-        if(info==null) return null;
-        if(info.equals(lastInfo)) return info;
+        if (info == null) return null;
+        if (info.equals(lastInfo)) return info;
         try {
-            String url=serverUrl + "/adddebuginfo?wechatId=" +
+            String url = serverUrl + "/adddebuginfo?wechatId=" +
                     java.net.URLEncoder.encode(wechatId, "UTF-8");
             String rsp = fetcher.httpPost(url
                     , info, null);
@@ -135,34 +139,34 @@ public class PageAndCounterSyncer implements Runnable{
     }
 
 
-    private int syncPages(){
+    private int syncPages() {
         List<State> states = new ArrayList<>(0);
         try {
             states = archiver.getNeedSyncPages(pageSize);
         } catch (SQLException e) {
             log.error(e.getMessage(), e);
         }
-        List<Integer> ids=new ArrayList<>(states.size());
-        for(State state:states){
+        List<Integer> ids = new ArrayList<>(states.size());
+        for (State state : states) {
             ids.add(state.getId());
         }
-        List<WebPage> pages=archiver.getWebPages(ids);
-        if(!pages.isEmpty()){
-            boolean syncSuccess=false;
+        List<WebPage> pages = archiver.getWebPages(ids);
+        if (!pages.isEmpty()) {
+            boolean syncSuccess = false;
             try {
-                String s=this.encPages(pages);
-                String rsp=null;
+                String s = this.encPages(pages);
+                String rsp = null;
 
-                String url=serverUrl + "/syncpages?wechatId=" +
+                String url = serverUrl + "/syncpages?wechatId=" +
                         java.net.URLEncoder.encode(wechatId, "UTF-8");
                 rsp = fetcher.httpPost(url
                         , s, null);
 
-                JsonObject jo=jp.parse(rsp).getAsJsonObject();
-                syncSuccess=jo.get("success").getAsBoolean();
-                if(syncSuccess){
+                JsonObject jo = jp.parse(rsp).getAsJsonObject();
+                syncSuccess = jo.get("success").getAsBoolean();
+                if (syncSuccess) {
                     archiver.updateSyncedPages(ids);
-                }else{
+                } else {
                     log.error(rsp);
                 }
             } catch (Exception e) {
@@ -182,33 +186,33 @@ public class PageAndCounterSyncer implements Runnable{
 
     @Override
     public void run() {
-        long lastUpdateDebugTime=0;
-        String lastInfo=null;
-        while(true){
-            int syncPages=this.syncPages();
+        long lastUpdateDebugTime = 0;
+        String lastInfo = null;
+        while (true) {
+            int syncPages = this.syncPages();
 
-            int syncCounter=this.syncCounters();
+            int syncCounter = this.syncCounters();
 
-            if(syncPages == 0 && syncCounter == 0){
+            if (syncPages == 0 && syncCounter == 0) {
                 try {
                     Thread.sleep(emptySleep);
                 } catch (InterruptedException e) {
 
                 }
-            }else {
+            } else {
                 log.info("syncPages: {}, syncCounter: {}", syncPages, syncCounter);
             }
 
-            if(System.currentTimeMillis()-lastUpdateDebugTime> 1*60*1000L){
+            if (System.currentTimeMillis() - lastUpdateDebugTime > 1 * 60 * 1000L) {
                 lastInfo = syncDebugInfo(lastInfo);
-                lastUpdateDebugTime=System.currentTimeMillis();
+                lastUpdateDebugTime = System.currentTimeMillis();
             }
         }
     }
 
     public static void main(String[] args) throws Exception {
-        PoolManager.StartPool("conf","wechat");
-        MysqlArchiver archiver=new MysqlArchiver();
+        PoolManager.StartPool("conf", "wechat");
+        MysqlArchiver archiver = new MysqlArchiver();
         new Thread(new PageAndCounterSyncer(archiver)).start();
     }
 

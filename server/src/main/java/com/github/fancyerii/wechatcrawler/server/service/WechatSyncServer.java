@@ -33,52 +33,53 @@ public class WechatSyncServer {
     String algorithm = "AES/CBC/PKCS5Padding";
     private String clearPass;
     private ConcurrentHashMap<String, String> debugInfoMap;
-    public WechatSyncServer(MysqlArchiver archiver) throws Exception{
-        salt=ConfigReader.getProp("salt");
-        String iv=ConfigReader.getProp("iv");
-        clearPass=ConfigReader.getProp("clear_pass");
+
+    public WechatSyncServer(MysqlArchiver archiver) throws Exception {
+        salt = ConfigReader.getProp("salt");
+        String iv = ConfigReader.getProp("iv");
+        clearPass = ConfigReader.getProp("clear_pass");
         ivParameterSpec = Tool.getIvFromBase64(iv);
-        keyMap=new ConcurrentHashMap<>();
+        keyMap = new ConcurrentHashMap<>();
         debugInfoMap = new ConcurrentHashMap<>();
-        this.archiver=archiver;
+        this.archiver = archiver;
     }
 
-    public void addDebugInfo(String key, String value){
+    public void addDebugInfo(String key, String value) {
         debugInfoMap.put(key, value);
     }
 
-    public String getDebugInfo(String key){
+    public String getDebugInfo(String key) {
         return debugInfoMap.get(key);
     }
 
-    public boolean clearPassMatch(String pass){
+    public boolean clearPassMatch(String pass) {
         return clearPass.equals(pass);
     }
 
-    public void clearAllPasses(){
+    public void clearAllPasses() {
         keyMap.clear();
     }
 
-    public String decypt(String wechatId, String text) throws Exception{
+    public String decypt(String wechatId, String text) throws Exception {
         SecretKey key = getKey(wechatId);
-        if(key==null) throw new RuntimeException("weichatId未注册，请联系管理员");
+        if (key == null) throw new RuntimeException("weichatId未注册，请联系管理员");
         return Tool.decrypt(algorithm, text, key, ivParameterSpec);
     }
 
     private SecretKey getKey(String wechatId) throws Exception {
-        SecretKey key=keyMap.get(wechatId);
-        if(key!=null) return key;
-        String pass=archiver.getWechatPass(wechatId);
-        if(pass == null) return null;
-        key=Tool.getKeyFromPassword(pass, salt);
+        SecretKey key = keyMap.get(wechatId);
+        if (key != null) return key;
+        String pass = archiver.getWechatPass(wechatId);
+        if (pass == null) return null;
+        key = Tool.getKeyFromPassword(pass, salt);
         keyMap.put(wechatId, key);
         return key;
     }
 
     public static void main(String[] args) throws Exception {
-        PoolManager.StartPool("conf","wechat");
-        MysqlArchiver archiver=new MysqlArchiver();
-        WechatSyncServer server=new WechatSyncServer(archiver);
+        PoolManager.StartPool("conf", "wechat");
+        MysqlArchiver archiver = new MysqlArchiver();
+        WechatSyncServer server = new WechatSyncServer(archiver);
         port(7654);
         staticFiles.location("/public");
 
@@ -92,42 +93,43 @@ public class WechatSyncServer {
 
     }
 
-    static Gson gson=new GsonBuilder().registerTypeAdapter(Date.class, new MyDateTypeAdapter()).create();
+    static Gson gson = new GsonBuilder().registerTypeAdapter(Date.class, new MyDateTypeAdapter()).create();
 
-    private static Route syncPages(final MysqlArchiver archiver, final WechatSyncServer server){
+    private static Route syncPages(final MysqlArchiver archiver, final WechatSyncServer server) {
         return (request, response) -> {
-            Map<String,Object> result=new HashMap<>();
-            String body=request.body();
+            Map<String, Object> result = new HashMap<>();
+            String body = request.body();
             try {
-                String wechatId=request.queryParams("wechatId");
-                if(Tool.isEmpty(wechatId)){
+                String wechatId = request.queryParams("wechatId");
+                if (Tool.isEmpty(wechatId)) {
                     result.put("success", false);
                     result.put("msg", "wechatId不能空");
                     return result;
                 }
-                List<WebPage> pages=null;
+                List<WebPage> pages = null;
                 try {
                     body = server.decypt(wechatId, body);
-                    pages = gson.fromJson(body, new TypeToken<List<WebPage>>(){}.getType());
+                    pages = gson.fromJson(body, new TypeToken<List<WebPage>>() {
+                    }.getType());
 
-                    for(WebPage page:pages){
-                        if(!page.getCrawlWechatId().equals(wechatId)){
-                            result.put("msg", "上传者"+wechatId+" 和网页抓取者不匹配");
+                    for (WebPage page : pages) {
+                        if (!page.getCrawlWechatId().equals(wechatId)) {
+                            result.put("msg", "上传者" + wechatId + " 和网页抓取者不匹配");
                             result.put("success", false);
                             return result;
                         }
                     }
-                }catch(Exception e){
+                } catch (Exception e) {
                     //log.error(e.getMessage(), e);
-                    result.put("msg", "无法解密文本，请联系管理员："+e.getMessage());
+                    result.put("msg", "无法解密文本，请联系管理员：" + e.getMessage());
                     result.put("success", false);
                     return result;
                 }
-                for(WebPage page:pages){
+                for (WebPage page : pages) {
                     archiver.upsertAllWebPages(page);
                 }
                 result.put("success", true);
-            }catch(Exception e){
+            } catch (Exception e) {
                 log.error(e.getMessage(), e);
                 result.put("msg", e.getMessage());
                 result.put("success", false);
@@ -136,13 +138,13 @@ public class WechatSyncServer {
         };
     }
 
-    private static Route clearPass(final MysqlArchiver archiver, final WechatSyncServer server){
+    private static Route clearPass(final MysqlArchiver archiver, final WechatSyncServer server) {
         return (request, response) -> {
-            Map<String,Object> result=new HashMap<>();
+            Map<String, Object> result = new HashMap<>();
 
             try {
-                String pass=request.queryParams("pass");
-                if(!server.clearPassMatch(pass)){
+                String pass = request.queryParams("pass");
+                if (!server.clearPassMatch(pass)) {
                     result.put("success", false);
                     result.put("msg", "密码错误");
                     result.put("pass", pass);
@@ -150,7 +152,7 @@ public class WechatSyncServer {
                 }
                 server.clearAllPasses();
                 result.put("success", true);
-            }catch(Exception e){
+            } catch (Exception e) {
                 result.put("msg", e.getMessage());
                 result.put("success", false);
             }
@@ -160,8 +162,8 @@ public class WechatSyncServer {
 
     private static Route getDebugInfo(final MysqlArchiver archiver, final WechatSyncServer server) {
         return (request, response) -> {
-            String key=request.queryParams("wechatId");
-            if(Tool.isEmpty(key)){
+            String key = request.queryParams("wechatId");
+            if (Tool.isEmpty(key)) {
                 return "无key";
             }
             String value = server.getDebugInfo(key);
@@ -174,10 +176,10 @@ public class WechatSyncServer {
 
     private static Route addDebugInfo(final MysqlArchiver archiver, final WechatSyncServer server) {
         return (request, response) -> {
-            String key=request.queryParams("wechatId");
+            String key = request.queryParams("wechatId");
 
-            String value=request.body();
-            if(Tool.isEmpty(key) || Tool.isEmpty(value)){
+            String value = request.body();
+            if (Tool.isEmpty(key) || Tool.isEmpty(value)) {
                 return "fail";
             }
             server.addDebugInfo(key, value);
@@ -185,40 +187,41 @@ public class WechatSyncServer {
         };
     }
 
-    private static Route syncCounters(final MysqlArchiver archiver, final WechatSyncServer server){
+    private static Route syncCounters(final MysqlArchiver archiver, final WechatSyncServer server) {
         return (request, response) -> {
-            Map<String,Object> result=new HashMap<>();
-            String body=request.body();
+            Map<String, Object> result = new HashMap<>();
+            String body = request.body();
             try {
-                String wechatId=request.queryParams("wechatId");
-                if(Tool.isEmpty(wechatId)){
+                String wechatId = request.queryParams("wechatId");
+                if (Tool.isEmpty(wechatId)) {
                     result.put("success", false);
                     result.put("msg", "wechatId不能空");
                     return result;
                 }
-                List<Counter> counters=null;
+                List<Counter> counters = null;
                 try {
                     body = server.decypt(wechatId, body);
-                    counters = gson.fromJson(body, new TypeToken<List<Counter>>(){}.getType());
+                    counters = gson.fromJson(body, new TypeToken<List<Counter>>() {
+                    }.getType());
 
-                    for(Counter counter:counters){
-                        if(!counter.getCrawlWechatId().equals(wechatId)){
-                            result.put("msg", "上传者"+wechatId+" 和网页抓取者不匹配");
+                    for (Counter counter : counters) {
+                        if (!counter.getCrawlWechatId().equals(wechatId)) {
+                            result.put("msg", "上传者" + wechatId + " 和网页抓取者不匹配");
                             result.put("success", false);
                             return result;
                         }
                     }
-                }catch(Exception e){
+                } catch (Exception e) {
                     log.error(e.getMessage(), e);
-                    result.put("msg", "无法解密文本，请联系管理员："+e.getMessage());
+                    result.put("msg", "无法解密文本，请联系管理员：" + e.getMessage());
                     result.put("success", false);
                     return result;
                 }
-                for(Counter counter:counters){
+                for (Counter counter : counters) {
                     archiver.upsertCounters(counter);
                 }
                 result.put("success", true);
-            }catch(Exception e){
+            } catch (Exception e) {
                 result.put("msg", e.getMessage());
                 result.put("success", false);
             }
