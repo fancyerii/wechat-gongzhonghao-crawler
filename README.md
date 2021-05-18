@@ -68,21 +68,17 @@ mysql> SHOW GLOBAL VARIABLES WHERE Variable_name LIKE 'character\_set\_%' OR Var
 ##### 建表
 在开始菜单寻找"Mysql 5.7 Command Line Client - Unicode"，点击后命令行执行 mysql -u root -p，输入root密码后执行下面的命令：
 
-# run as root
-CREATE DATABASE `wechat`;
-CREATE USER 'wechat'@'localhost' IDENTIFIED BY 'mypass';
-GRANT ALL PRIVILEGES ON wechat.* TO 'wechat'@'localhost';
-FLUSH PRIVILEGES;
-
-如果需要，也可以修改wechat的密码为其它值，但是后面的配置文件也需要设置成对应的密码。 然后exit退出，然后用wechat账号重新登录：mysql -u wechat -p，并创建表：
-
 ```
 # run as root
 CREATE DATABASE `wechat`;
 CREATE USER 'wechat'@'localhost' IDENTIFIED BY 'mypass';
 GRANT ALL PRIVILEGES ON wechat.* TO 'wechat'@'localhost';
 FLUSH PRIVILEGES;
+```
 
+如果需要，也可以修改wechat的密码为其它值，但是后面的配置文件也需要设置成对应的密码。 然后exit退出，然后用wechat账号重新登录：mysql -u wechat -p，并创建表：
+
+```
 use wechat;
 CREATE TABLE `webpage` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
