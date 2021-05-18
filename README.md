@@ -136,7 +136,7 @@ CREATE TABLE `debuginfo` (
 
 用户可以在[这里](./tools/jdk-8u271-windows-x64.exe)下载JDK，或者根据自己的机器选择其它版本的JDK。安装后需要设置环境变量，确保可以通过cmd运行Java。
 
-jdk的安装使用默认选项就可以。启动命令行，输入java确认安装成功。如果找不到请设置PATH环境变量，具体可以上网搜索。 在[release](https://github.com/fancyerii/wechat-gongzhonghao-crawler/releases)下载最新版本的wechat-crawler-server-...-jar-with-dependencies.jar。把这个jar包放到某个文件夹下，然后在这个文件夹下创建一个conf的目录，下载[dfConf.properties]配置文件到conf目录下。然后修改：
+jdk的安装使用默认选项就可以。启动命令行，输入java确认安装成功。如果找不到请设置PATH环境变量，具体可以上网搜索。 在[release](https://github.com/fancyerii/wechat-gongzhonghao-crawler/releases)下载最新版本的wechat-crawler-server-...-jar-with-dependencies.jar。把这个jar包放到某个文件夹下，然后在这个文件夹下创建一个conf的目录。在conf下新建一个dfConf.properties配置文件，然后修改其内容：
 
 ```
 MYSQL_DRIVER=org.gjt.mm.mysql.Driver
@@ -144,6 +144,7 @@ MYSQL_URL=jdbc:mysql://localhost:3306/${db}
 MYSQL_USER=wechat
 MYSQL_PASS=mypass
 ```
+主要是修改密码。
 
 然后在命令行执行：
 ```
