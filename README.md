@@ -140,7 +140,7 @@ CREATE TABLE `debuginfo` (
 
 用户可以在[这里](./tools/jdk-8u271-windows-x64.exe)下载JDK，或者根据自己的机器选择其它版本的JDK。安装后需要设置环境变量，确保可以通过cmd运行Java。
 
-jdk的安装使用默认选项就可以。启动命令行，输入java确认安装成功。如果找不到请设置PATH环境变量，具体可以上网搜索。 在[release](./releases)下载最新版本的wechat-crawler-server-...-jar-with-dependencies.jar。把这个jar包放到某个文件夹下，然后在这个文件夹下创建一个conf的目录，下载[dfConf.properties]配置文件到conf目录下。然后修改：
+jdk的安装使用默认选项就可以。启动命令行，输入java确认安装成功。如果找不到请设置PATH环境变量，具体可以上网搜索。 在[release](https://github.com/fancyerii/wechat-gongzhonghao-crawler/releases)下载最新版本的wechat-crawler-server-...-jar-with-dependencies.jar。把这个jar包放到某个文件夹下，然后在这个文件夹下创建一个conf的目录，下载[dfConf.properties]配置文件到conf目录下。然后修改：
 
 ```
 MYSQL_DRIVER=org.gjt.mm.mysql.Driver
@@ -164,7 +164,7 @@ java -cp weichat-crawler-server-1.0-jar-with-dependencies.jar com.github.fancyer
 因为爬虫的工作原理是控制微信，所以需要去掉windows的自动锁屏功能。具体方法可以参考[这篇文章](https://jingyan.baidu.com/article/91f5db1b00c5b31c7f05e3cb.html)。
 
 #### 设置客户端
-首先去[release](./release)下载最新版本的cli.exe，把它放到某个目录下，然后在这个目录创建config.ini文件和gongzhonghao.txt两个文件。config.ini可以参考这个： 
+首先去[release](https://github.com/fancyerii/wechat-gongzhonghao-crawler/releases)下载最新版本的cli.exe，把它放到某个目录下，然后在这个目录创建config.ini文件和gongzhonghao.txt两个文件。config.ini可以参考这个： 
 
 ```
 [basic]
