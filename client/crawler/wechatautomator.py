@@ -77,34 +77,6 @@ class WechatAutomator:
         else:
             return None
 
-    def open_browser(self, account_name, detail):
-        tree = self.build_tree(self.main_win)
-        result = [None]
-        self.find_fuwuhao_icon(tree, account_name, result)
-        btn = result[0]
-        if btn is None:
-            s = "can't find icon"
-            logger.debug(s)
-            WechatAutomator.add_to_detail(s, detail)
-            return
-        rect = btn["rect"]
-        win_rect = self.main_win.rectangle()
-        x = (rect.left + rect.right) // 2 - win_rect.left
-        y = (rect.top + rect.bottom) // 2 - win_rect.top
-        self.click((x, y))
-        contact = self.main_win.child_window(title="微信", class_name="ContactProfileWnd")
-        btn = contact.child_window(title="查看历史消息", control_type="Button")
-
-        coords = btn.rectangle()
-        rect = contact.rectangle()
-        x = (coords.left + coords.right) // 2
-        y = (coords.top + coords.bottom) // 2
-
-        pywinauto.mouse.move((x, y))
-        pywinauto.mouse.click(coords=(x, y))
-        time.sleep(1)
-        self.browser2 = self.app.window(title="微信", class_name="CefWebViewWnd")
-
     @staticmethod
     def url_in_states(url, states):
         for state in states:
