@@ -218,6 +218,46 @@ java -cp weichat-crawler-server-xxx-jar-with-dependencies.jar com.github.fancyer
 ## 查看抓取数据
 使用浏览器打开[这里](http://localhost:4567/search)，就可以搜索公众号文章，下方的【下载JSON】链接也可以导出下载的文章。UI比较丑陋，欢迎大家发pull request改进ui。
 
+## 开发者
+
+### clone代码
+
+因为在tools里有微信和mysql等很大的安装程序，是通过LFS存储的。如果直接clone会很慢而且没有必要，可以设置环境变量GIT_LFS_SKIP_SMUDGE=1来忽略它们：
+```
+GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/fancyerii/wechat-gongzhonghao-crawler.git
+cd wechat-gongzhonghao-crawler
+```
+
+### 编译Server代码
+
+```
+$ cd server
+$ mvn compile assembly:single
+```
+
+编译后的jar包在target/wechat-crawler-server-1.0-jar-with-dependencies.jar，它包含了所有的依赖。
+
+### Client代码
+
+安装依赖：
+```
+pip install -r requirements.txt
+```
+
+然后直接运行cli.py即可。
+
+### Client打包成exe文件
+
+需要安装pyinstaller：
+```
+pip install pyinstaller
+```
+然后用pyinstaller打包：
+```
+cd client
+pyinstaller.exe --one-file cli.py
+```
+
 ## FAQ
 
 ### 抓取的时候电脑为什么干不了别的事情？
