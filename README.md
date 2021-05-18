@@ -257,7 +257,7 @@ pyinstaller.exe --one-file cli.py
 
 ### 客户端代码介绍
 
-请参考[使用pywinauto驱动微信客户端实现公众号抓取](http://fancyerii.github.io/2021/05/18/pywinauto-wechat-crawler/)。
+请参考[使用pywinauto驱动微信客户端实现公众号抓取](https://fancyerii.github.io/2021/05/18/pywinauto-wechat-crawler/)。
 
 ## FAQ
 
