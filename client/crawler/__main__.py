@@ -188,8 +188,8 @@ def main(parser):
                         continue
 
                     curr_max_pages = max(max_crawl_pages, first_pages)
-                    force_counter = True
                     curr_latest_date = latest_date
+
                 s = "curr_max: {}, curr_pages: {}".format(curr_max_pages, curr_crawl_pages)
                 print(s)
                 add_to_detail(s, detail)
@@ -201,7 +201,7 @@ def main(parser):
                 print(s)
                 if result:
                     for article in articles:
-                        url, _, title, html = article
+                        url, _, title, html, _, read_count = article
                         if not url_in_states(url, states):
                             page = {"url": url,
                                     "crawlWechatId": wechat_id,
