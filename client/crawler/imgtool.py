@@ -62,21 +62,29 @@ def locate_read_count(img_array, debug_fn, bottom, bg_color=None):
     height, width = img_array.shape[:2]
 
     for r in range(bottom-1, bottom-MAX_SEARCH_ROW, -1):
-        # 找到第一行非全白背景的行，此行内容是
+        # 找到第一行非全白背景的行，此行内容是分享
         if not np.all(img_array[r][LEFT_MOST:RIGHT_MOST] == bg_color):
             break
+    if debug_fn:
+        draw_bbox(img_array, (0, r, width-1, r+1), debug_fn + "-1.png")
 
     for r2 in range(r-1, r-MAX_SEARCH_ROW, -1):
         if np.all(img_array[r2][LEFT_MOST:RIGHT_MOST] == bg_color):
             break
+    if debug_fn:
+        draw_bbox(img_array, (0, r2, width - 1, r2 + 1), debug_fn + "-2.png")
 
     for r3 in range(r2-1, r2-MAX_SEARCH_ROW, -1):
         if not np.all(img_array[r3][LEFT_MOST:RIGHT_MOST] == bg_color):
             break
+    if debug_fn:
+        draw_bbox(img_array, (0, r3, width - 1, r3 + 1), debug_fn + "-3.png")
 
     for r4 in range(r3-1, r3-MAX_SEARCH_ROW, -1):
         if np.all(img_array[r4][LEFT_MOST:RIGHT_MOST] == bg_color):
             break
+    if debug_fn:
+        draw_bbox(img_array, (0, r4, width - 1, r4 + 1), debug_fn + "-4.png")
 
     row = (r3 + r4)//2
     # 从右边往左的第一个非白色像素就是阅读数的最后一个数字的最右侧
@@ -88,7 +96,7 @@ def locate_read_count(img_array, debug_fn, bottom, bg_color=None):
         if np.all(img_array[row, col_start] == bg_color):
             break
     if debug_fn:
-        draw_bbox(img_array, (col_start, r4, col_end, r3), debug_fn + "-2.png")
+        draw_bbox(img_array, (col_start, r4, col_end, r3), debug_fn + "-final.png")
     return (col_start + col_end)//2, row
 
 if __name__ == '__main__':

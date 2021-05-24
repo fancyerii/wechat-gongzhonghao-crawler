@@ -273,24 +273,16 @@ class WechatAutomator:
         # 精确定位
         found = False
         for i in range(20):
-            print(bottom)
             # 太靠上，使用UP键往下一点
-            if bottom - self.visible_top < 1.0/4 * content_height:
+            # UP键的作用是往下
+            if bottom - self.visible_top < 120:
                 self.browser_key(1, "{UP}")
-                bottom_new = imgtool.locate_content_bottom(img_array, fn+"_fine_"+str(i))
-                if bottom_new == bottom:
-                    found = True
-                    break
-                else:
-                    bottom = bottom_new
-            elif bottom - self.visible_top > 3.0/4 * content_height:
+                img_array = imgtool.snap_shot(self.browser.rectangle())
+                bottom = imgtool.locate_content_bottom(img_array, fn+"_fine_"+str(i))
+            elif bottom > height - 50:
                 self.browser_key(1, "{DOWN}")
-                bottom_new = imgtool.locate_content_bottom(img_array, fn + "_fine_" + str(i))
-                if bottom_new == bottom:
-                    found = True
-                    break
-                else:
-                    bottom = bottom_new
+                img_array = imgtool.snap_shot(self.browser.rectangle())
+                bottom = imgtool.locate_content_bottom(img_array, fn + "_fine_" + str(i))
             else:
                 found = True
                 break
