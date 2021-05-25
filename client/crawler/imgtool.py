@@ -1,5 +1,9 @@
 from PIL import ImageGrab, Image
 import numpy as np
+import re
+import pytesseract
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract"
+
 
 def snap_shot_to_file(rect, file):
     pic = ImageGrab.grab((rect.left, rect.top, rect.right, rect.bottom))
@@ -7,6 +11,7 @@ def snap_shot_to_file(rect, file):
 
 def snap_shot(rect):
     return np.asarray(ImageGrab.grab((rect.left, rect.top, rect.right, rect.bottom)))
+
 
 def draw_bbox(img_array, bbox, out_img):
     #img_array = np.asarray(Image.open(img))
@@ -51,11 +56,14 @@ def locate_content_bottom(img_array, debug_fn, bg_color=None):
     if not has_content:
         return -1
 
-
-
     return row
 
-def locate_read_count(img_array, debug_fn, bottom, bg_color=None):
+def ocr(img):
+    options = "-l {} --psm {}".format("chi_sim", "7")
+    text = pytesseract.image_to_string(img, config=options)
+    return text
+
+def extract_read_count(img_array, debug_fn, bottom, bg_color=None):
     if bg_color is None:
         bg_color = [255, 255, 255]
 
@@ -86,18 +94,29 @@ def locate_read_count(img_array, debug_fn, bottom, bg_color=None):
     if debug_fn:
         draw_bbox(img_array, (0, r4, width - 1, r4 + 1), debug_fn + "-4.png")
 
-    row = (r3 + r4)//2
-    # 从右边往左的第一个非白色像素就是阅读数的最后一个数字的最右侧
-    for col_end in range(width//2, LEFT_MOST, -1):
-        if not np.all(img_array[row, col_end] == bg_color):
-            break
-
-    for col_start in range(col_end-1, LEFT_MOST, -1):
-        if np.all(img_array[row, col_start] == bg_color):
-            break
+    read_count_img = Image.fromarray(img_array[r4-5:r3+5, :])
     if debug_fn:
-        draw_bbox(img_array, (col_start, r4, col_end, r3), debug_fn + "-final.png")
-    return (col_start + col_end)//2, row
+        read_count_img.save(debug_fn + "-5.png")
+    text = ocr(read_count_img)
+    return _extract_count(text)
+
+def _extract_count(s):
+    if s is None:
+        return -1
+    if "阅读" not in s:
+        return -1
+    try:
+        res = re.search('([0-9.]+)万+', s)
+        if res:
+            return int(10000*float(res.group(1)))
+        else:
+            res = re.search('([0-9]+)', s)
+            return int(res.group(1))
+    except:
+        return -1
+
 
 if __name__ == '__main__':
-    locate_read_count("tmp2.png", "debug")
+    # locate_read_count("tmp2.png", "debug")
+    text = ocr(Image.open("debug-6_locate-5.png"))
+    print(text)

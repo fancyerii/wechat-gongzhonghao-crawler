@@ -255,13 +255,13 @@ class WechatAutomator:
         return clicked_titles
 
     def extract_read_count(self, fn):
-        self.browser_page_down(30, 0.1)
+        self.browser_page_down(30)
         # 初步定位
         for i in range(20):
             img_array = imgtool.snap_shot(self.browser.rectangle())
             bottom = imgtool.locate_content_bottom(img_array, fn+"_coarse_"+str(i))
             if bottom == -1:
-                self.browser_key(1, "{PGUP}", sleep_time=1)
+                self.browser_key(1, "{PGUP}")
             else:
                 break
         # 没找到
@@ -288,15 +288,9 @@ class WechatAutomator:
                 break
 
         if not found:
-            return None
-        location = imgtool.locate_read_count(img_array, fn+"_locate", bottom)
-        rect = self.browser.rectangle()
-        self.double_click((location[0] + rect.left, location[1] + rect.top))
-        imgtool.snap_shot_to_file(rect, fn+"-click.png")
-        self.browser.type_keys("^c")
-        count = clipboard.GetData()
-        if count.startswith("http"):
-            return None
+            return -1
+        count = imgtool.extract_read_count(img_array, fn+"_locate", bottom)
+
         return count
 
 
