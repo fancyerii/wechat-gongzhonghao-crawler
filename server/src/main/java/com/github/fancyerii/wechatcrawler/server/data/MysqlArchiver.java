@@ -46,16 +46,21 @@ public class MysqlArchiver {
             pstmt = conn.prepareStatement(
                     "insert into state(id, crawl_state, counter_state, first_add, last_update, title, url, pub_name, " +
                             "sync_page, sync_counter)" +
-                            " values(?,?,1,now(),now(),?,?,?,0,0)");
+                            " values(?,?,?,now(),now(),?,?,?,0,0)");
             if (page.getHtml() != null) {
                 pstmt.setInt(2, 0);
             } else {
                 pstmt.setInt(2, 1);
             }
+            if(page.getReadCount()>0){
+                pstmt.setInt(3, 0);
+            }else{
+                pstmt.setInt(3, 1);
+            }
             pstmt.setInt(1, page.getId());
-            pstmt.setString(3, page.getTitle());
-            pstmt.setString(4, page.getUrl());
-            pstmt.setString(5, page.getPubName());
+            pstmt.setString(4, page.getTitle());
+            pstmt.setString(5, page.getUrl());
+            pstmt.setString(6, page.getPubName());
             pstmt.executeUpdate();
 
         } finally {
@@ -214,6 +219,12 @@ public class MysqlArchiver {
         return states;
     }
 
+    /**
+     *
+     * @param pubName
+     * @return 注意： State.firstAdd改成了webpage.pub_time，这是为了客户端更新阅读数的目的
+     * @throws SQLException
+     */
     public List<State> getStates(String pubName) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -222,11 +233,14 @@ public class MysqlArchiver {
         try {
             conn = PoolManager.getConnection();
             pstmt = conn.prepareStatement(
-                    "select * from state where pub_name=? order by id desc limit 1000");
+                    "select state.*, webpage.pub_time from state left join webpage on state.id=webpage.id where webpage.pub_name=? order by id desc limit 1000");
             pstmt.setString(1, pubName);
             rs = pstmt.executeQuery();
             while (rs.next()) {
-                states.add(this.populateState(rs));
+                State state = this.populateState(rs);
+                //把firstAdd改成pub_time
+                state.setFirstAdd(DBUtils.timestamp2Date(rs.getTimestamp("pub_time")));
+                states.add(state);
             }
         } finally {
             DBUtils.closeAll(conn, pstmt, rs);
@@ -234,25 +248,18 @@ public class MysqlArchiver {
         return states;
     }
 
-    public void updateCounter(int id, String crawlWechatId, int readCount, int starCount, String rvs) throws Exception {
+    public void upsertCounter(int id, String crawlWechatId, int readCount) throws Exception {
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
             conn = PoolManager.getConnection();
 
-            pstmt = conn.prepareStatement("insert into counter(id, read_count, star_count, crawl_wechat_id, last_update, rvs)" +
-                    "values(?,?,?,?,now(),?) on duplicate key update read_count=VALUES(read_count), star_count=VALUES(star_count), " +
-                    "crawl_wechat_id=VALUES(crawl_wechat_id), last_update=now(), rvs=VALUES(rvs)");
+            pstmt = conn.prepareStatement("insert into counter(id, read_count, crawl_wechat_id, last_update)" +
+                    "values(?,?,?,now()) on duplicate key update read_count=VALUES(read_count), " +
+                    "crawl_wechat_id=VALUES(crawl_wechat_id), last_update=now()");
             pstmt.setInt(1, id);
             pstmt.setInt(2, readCount);
-            pstmt.setInt(3, starCount);
-            pstmt.setString(4, crawlWechatId);
-            byte[] bytes = this.gzipHtml(rvs);
-            if (bytes == null) {
-                pstmt.setNull(5, java.sql.Types.BLOB);
-            } else {
-                pstmt.setBlob(5, new ByteArrayInputStream(bytes));
-            }
+            pstmt.setString(3, crawlWechatId);
             pstmt.executeUpdate();
 
         } finally {
@@ -373,28 +380,22 @@ public class MysqlArchiver {
         }
     }
 
-    public void upsertCounters(Counter counter) throws Exception {
+    public void upsertAllCounters(Counter counter) throws Exception {
         Connection conn = null;
 
         PreparedStatement pstmt = null;
         try {
             conn = PoolManager.getConnection();
             pstmt = conn.prepareStatement(
-                    "insert into all_counters(url, read_count, star_count, last_update, crawl_wechat_id, rvs)" +
-                            " values(?,?,?,now(),?,?)" +
+                    "insert into all_counters(url, read_count, last_update, crawl_wechat_id)" +
+                            " values(?,?,now(),?)" +
                             " ON DUPLICATE KEY UPDATE read_count=VALUES(read_count), star_count=VALUES(star_count), " +
                             "last_update=now(), " +
                             "crawl_wechat_id=VALUES(crawl_wechat_id), rvs=VALUES(rvs)");
             pstmt.setString(1, counter.getUrl());
             pstmt.setInt(2, counter.getReadCount());
-            pstmt.setInt(3, counter.getStarCount());
-            pstmt.setString(4, counter.getCrawlWechatId());
-            byte[] bytes = this.gzipHtml(counter.getRvs());
-            if (bytes == null) {
-                pstmt.setNull(5, java.sql.Types.BLOB);
-            } else {
-                pstmt.setBlob(5, new ByteArrayInputStream(bytes));
-            }
+            pstmt.setString(3, counter.getCrawlWechatId());
+
             pstmt.executeUpdate();
 
         } finally {
@@ -767,9 +768,7 @@ public class MysqlArchiver {
                 counters.add(counter);
                 counter.setUrl(rs.getString("url"));
                 counter.setReadCount(rs.getInt("read_count"));
-                counter.setStarCount(rs.getInt("star_count"));
                 counter.setCrawlWechatId(rs.getString("crawl_wechat_id"));
-                counter.setRvs(this.readHtml(rs.getBinaryStream("rvs")));
             }
 
         } catch (Exception e) {
