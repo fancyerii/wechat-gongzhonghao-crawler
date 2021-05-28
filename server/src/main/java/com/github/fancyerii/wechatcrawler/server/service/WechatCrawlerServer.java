@@ -11,10 +11,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import spark.*;
 
-import java.io.File;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -201,6 +199,9 @@ public class WechatCrawlerServer {
                 page.setId(id);
                 result.put("id", id);
                 archiver.initState(page);
+                if(page.getReadCount()>0){
+                    archiver.upsertCounter(id,page.getCrawlWechatId() , page.getReadCount());
+                }
                 archiver.updateHeartbeat(page.getCrawlWechatId(), "add-url");
                 result.put("success", true);
             } catch (Exception e) {
@@ -267,15 +268,9 @@ public class WechatCrawlerServer {
                         result.put("msg", "read为空或者非整数");
                         return result;
                     }
-                    Integer starCount = Tool.getInt(jo.get("star").getAsString());
-                    if (starCount == null) {
-                        result.put("success", false);
-                        result.put("msg", "star为空或者非整数");
-                        return result;
-                    }
+
                     bState = true;
-                    String rvs = jo.get("rvs").toString();
-                    archiver.updateCounter(id, wechatId, readCount, starCount, rvs);
+                    archiver.upsertCounter(id, wechatId, readCount);
                 } else if (state.equalsIgnoreCase("false")) {
                     bState = false;
                 } else {
@@ -288,6 +283,7 @@ public class WechatCrawlerServer {
                 result.put("success", true);
                 result.put("update", updateCount);
             } catch (Exception e) {
+                log.error(e.getMessage(), e);
                 result.put("msg", e.getMessage());
                 result.put("success", false);
             }

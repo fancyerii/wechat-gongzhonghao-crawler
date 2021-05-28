@@ -218,7 +218,7 @@ public class WechatSyncServer {
                     return result;
                 }
                 for (Counter counter : counters) {
-                    archiver.upsertCounters(counter);
+                    archiver.upsertAllCounters(counter);
                 }
                 result.put("success", true);
             } catch (Exception e) {

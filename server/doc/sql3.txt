@@ -1,0 +1,7 @@
+CREATE TABLE `counter` (
+  `id` int(11) NOT NULL,
+  `read_count` int DEFAULT -1,
+  `last_update` datetime NOT NULL,
+  `crawl_wechat_id` varchar(128) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4;
