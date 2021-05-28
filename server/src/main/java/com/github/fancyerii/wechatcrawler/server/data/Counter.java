@@ -10,7 +10,5 @@ import java.util.Date;
 public class Counter {
     private String url;
     private int readCount;
-    private int starCount;
     private String crawlWechatId;
-    private String rvs;
 }

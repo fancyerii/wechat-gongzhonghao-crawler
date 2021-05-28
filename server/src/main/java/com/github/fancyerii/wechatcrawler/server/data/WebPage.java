@@ -17,5 +17,5 @@ public class WebPage {
     private String content;
     private Date lastUpdate;
     private String crawlWechatId;
-
+    private int readCount;
 }

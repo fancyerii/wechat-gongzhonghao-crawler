@@ -132,6 +132,20 @@ CREATE TABLE `debuginfo` (
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4;
 ```
 
+阅读数的表：
+
+```
+CREATE TABLE `counter` (
+  `id` int(11) NOT NULL,
+  `read_count` int DEFAULT -1,
+  `last_update` datetime NOT NULL,
+  `crawl_wechat_id` varchar(128) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4;
+```
+
+如果用户从v1.0升级到v1.1，则只需要新增counter表就行。
+
 #### 安装JDK并启动服务
 
 用户可以在[这里](./tools/jdk-8u271-windows-x64.exe)下载JDK，或者根据自己的机器选择其它版本的JDK。安装后需要设置环境变量，确保可以通过cmd运行Java。
@@ -159,6 +173,9 @@ java -cp weichat-crawler-server-1.0-jar-with-dependencies.jar com.github.fancyer
 
 #### 系统设置
 因为爬虫的工作原理是控制微信，所以需要去掉windows的自动锁屏功能。具体方法可以参考[这篇文章](https://jingyan.baidu.com/article/91f5db1b00c5b31c7f05e3cb.html)。
+
+#### 安装tesseract
+v1.1新增，如果需要抓取阅读数需要安装它。安装方法参考[这里](https://fancyerii.github.io/2021/05/25/pywinauto-wechat-crawler-3/#%E5%AE%89%E8%A3%85windows%E7%89%88%E6%9C%AC%E7%9A%84tesseract)，请记得确认安装的路径是“C:\Program Files\Tesseract-OCR\tesseract”，目前的代码还不能
 
 #### 设置客户端
 首先去[release](https://github.com/fancyerii/wechat-gongzhonghao-crawler/releases)下载最新版本的cli.exe，把它放到某个目录下，然后在这个目录创建config.ini文件和gongzhonghao.txt两个文件。config.ini可以参考这个： 
@@ -189,6 +206,11 @@ switch_gongzhonghao = 北京动物园
     * 由于抓取的原理，则需要通过切换账号才能实现得到最新的文章，如果在gongzhonghao.txt里只配置了一个公众号，则需要配置用于“切换”刷新的公众号。
 * first_max_crawl_time
     * 单位是秒。为了避免第一次刷新的时间过程，这个参数会让代码跳出循环。比如有10个公众号，假设每个公众号第一次抓取要一天。如果没有这个设置，那么第一次抓取可能会需要10天，当第一次结束后默认更新时只抓取3页，那么如果某个公众号在10天里更新超过3页，就有可能漏过。配置了这个参数上之后，比如抓取第一个公众号的第一次需要1天，它超过了3600s，则会跳出循环，然后再次循环，再次抓取公众号1，这会很快，然后第一次抓取公众号2，花一天时间，然后又退出；然后再次抓取公众号1和2，然后又花一天抓取公众号3，……，这样就能保障不会漏抓。
+* crawl_read_count
+    * v1.1新增，默认为False。如果需要抓取阅读数，则需要设置为True
+* counter_interval_seconds
+    * v1.1新增，默认为172800(两天)。表示当前距离文章的发布时间超过它(两天)才抓取阅读数
+
 
 #### 配置公众号
 为了告诉爬虫抓取哪些公众号，需要在gongzhonghao.txt里配置要抓取的公众号名(注意是名字而不是id)。 比如：
@@ -252,7 +274,13 @@ pip install pyinstaller
 然后用pyinstaller打包：
 ```
 cd client
-pyinstaller.exe --one-file cli.py
+pyinstaller.exe --onefile cli.py
+```
+
+如果是python3.6的话可能会出现“The win32ui module could not initialize the application object”的错误，参考[这篇文章](https://www.cnblogs.com/banyanisdora/p/14272647.html)，可以协助300版本安装228：
+```
+pip uninstall pywin32
+pip install pywin32==228
 ```
 
 ### 客户端代码介绍
@@ -268,7 +296,7 @@ pyinstaller.exe --one-file cli.py
 因为抓取的原理，如果锁屏的话程序就无法控制危险客户端，从而也就无法抓屏了。如果是在自己家里，应该风险不大。如果是在办公室里，建议配置lock_input=true，这样程序会锁定鼠标和键盘。锁定后我们可以使用【win+L】解除锁定并且锁屏，然后输入密码解锁。另外如果是台式机的话，建议抓取的时候关掉显示器，这样是不会影响抓取的。笔记本合上机盖可能会锁屏，读者可以搜索自己的笔记本品牌看看是否能够盒盖但是不锁屏。
 
 ### 能够抓取阅读数量等信息吗？
-目前通过pywinauto是无法定位到阅读数的，好像微信做了解密处理。后期的版本可能会通过ocr的方式提取，欢迎关注。
+v1.1版本实现了阅读数的抓取。
 
 ### 能够抓取订阅号的文章吗？
 目前还不行。
