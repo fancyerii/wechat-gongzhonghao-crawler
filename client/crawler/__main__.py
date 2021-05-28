@@ -17,6 +17,12 @@ def url_in_states(url, states):
             return True
     return False
 
+def find_id_in_states(url, states):
+    for state in states:
+        if url == state['url']:
+            return state["id"]
+    return None
+
 
 def send_heart_beat(wechat_id, type, java_server):
     try:
@@ -58,6 +64,8 @@ def main(parser):
     win_width = int(parser.get('basic', 'win_width', fallback=1000))
     win_height = int(parser.get('basic', 'win_height', fallback=600))
     crawl_interval = int(parser.get('basic', 'crawl_interval', fallback=1))
+    counter_interval_seconds = int(parser.get('basic', 'counter_interval_seconds', fallback=48*3600))
+
     crawl_pages = int(parser.get('basic', 'crawl_pages', fallback=3))
     max_crawl_pages = int(parser.get('basic', 'max_crawl_pages', fallback=6))
 
@@ -68,6 +76,11 @@ def main(parser):
     first_max_crawl_time = int(parser.get('basic', 'first_max_crawl_time', fallback="86400"))
     switch_gongzhonghao = parser.get('basic', 'switch_gongzhonghao', fallback=None)
 
+    crawl_read_count = parser.get('basic', 'crawl_read_count', fallback="False")
+    crawl_read_count = crawl_read_count.lower() == 'true'
+
+    debug_ocr = parser.get('basic', 'debug_ocr', fallback="False")
+    debug_ocr = debug_ocr.lower() == 'true'
 
 
     print("max_crawl_pages: {}, crawl_pages: {}".format(max_crawl_pages, crawl_pages))
@@ -75,10 +88,13 @@ def main(parser):
     print("java_server: {}".format(java_server))
     print("wechat_path: {}".format(wechat_path))
     print("crawl_interval: {} hours".format(crawl_interval))
+    print("counter_interval: {} seconds".format(counter_interval_seconds))
     print("latest_date: {}".format(latest_date))
     print("first_max_crawl_time: {}".format(first_max_crawl_time))
     print("switch_gongzhonghao: {}".format(switch_gongzhonghao))
     print("first_pages: {}".format(first_pages))
+    print("crawl_read_count: {}".format(crawl_read_count))
+    print("debug_ocr: {}".format(debug_ocr))
 
     cwd = os.getcwd()
     print("current directory {}".format(cwd))
@@ -95,10 +111,13 @@ def main(parser):
     debug_info["first_max_crawl_time"] = first_max_crawl_time
     debug_info["switch_gongzhonghao"] = switch_gongzhonghao
     debug_info["first_pages"] = first_pages
+    debug_info["crawl_read_count"] = crawl_read_count
+    debug_info["counter_interval_seconds"] = counter_interval_seconds
+    debug_info["debug_ocr"] = debug_ocr
 
     automator = WechatAutomator()
     try:
-        automator.init_window()
+        automator.init_window(counter_interval=counter_interval_seconds)
     except:
         print("微信未启动或未登陆，请启动微信并扫码登陆后再运行本程序。")
         return
@@ -167,12 +186,15 @@ def main(parser):
                     if i < 50:
                         add_to_detail("state: {}".format(state), detail)
                     print(state)
-                force_counter = False
+
                 curr_crawl_pages = crawl_pages
                 curr_max_pages = max_crawl_pages
+                # 可以通过它是否为None来判断是否首次抓取
                 curr_latest_date = None
 
+                is_first_crawl = False
                 if len(states) == 0:
+                    is_first_crawl = True
                     s = "首次抓取 {}".format(line)
                     add_to_detail(s, detail)
                     print(s)
@@ -188,25 +210,28 @@ def main(parser):
                         continue
 
                     curr_max_pages = max(max_crawl_pages, first_pages)
-                    force_counter = True
                     curr_latest_date = latest_date
+
                 s = "curr_max: {}, curr_pages: {}".format(curr_max_pages, curr_crawl_pages)
                 print(s)
                 add_to_detail(s, detail)
                 result = automator.crawl_gongzhonghao(line, articles,
                                                       states=states, max_pages=curr_max_pages,
-                                                      detail=detail, latest_date=curr_latest_date)
+                                                      detail=detail, latest_date=curr_latest_date,
+                                                      crawl_counter=crawl_read_count,
+                                                      debug_ocr=debug_ocr)
                 s = "抓取 {} 成功: {}".format(line, result)
                 add_to_detail(s, detail)
                 print(s)
                 if result:
                     for article in articles:
-                        url, _, title, html = article
+                        url, _, title, html, pub_date, read_count = article
                         if not url_in_states(url, states):
                             page = {"url": url,
                                     "crawlWechatId": wechat_id,
                                     "title": title,
                                     "pubName": line,
+                                    "readCount": read_count,
                                     "html": html}
                             s = "addurl: {}".format(page["url"])
                             add_to_detail(s, detail)
@@ -219,6 +244,45 @@ def main(parser):
                                 print(s)
                                 continue
 
+                if crawl_read_count and not is_first_crawl:
+                    results = []
+
+                    res = automator.crawl_read_count(line, results, states, detail,
+                                               max_pages=curr_max_pages, debug_ocr=debug_ocr)
+                    s = "抓取 readcount {} 成功: {}".format(line, res)
+                    add_to_detail(s, detail)
+                    print(s)
+                    if res:
+                        for item in results:
+                            url, _, title, html, pub_date, read_count = item
+                            if read_count <= 0:
+                                s = "{} {} no url".format(url, title)
+                                print(s)
+                                add_to_detail(s, detail)
+                                continue
+
+                            page_id = find_id_in_states(url, states)
+                            if page_id is None:
+                                s = "url {} not found in states".format(url)
+                                print(s)
+                                add_to_detail(s, detail)
+                                continue
+
+                            params = {'wechatId': wechat_id,
+                                      'id': page_id,
+                                      "state": True,
+                                      "read": read_count
+                                      }
+                            s = "counter params: {}".format(params)
+                            add_to_detail(s, detail)
+                            print(s)
+                            r = requests.post(java_server + '/updatecounter', json=params)
+
+                            res = json.loads(r.text)
+                            if not res["success"]:
+                                s = "更新失败: {}".format(res)
+                                add_to_detail(s, detail)
+                                print(s)
 
             except:
                 traceback.print_exc()
