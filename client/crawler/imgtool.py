@@ -38,7 +38,7 @@ RIGHT_MOST = -20
 MAX_SEARCH_ROW = 100
 
 
-def locate_content_bottom(img_array, debug_fn, bg_color=None):
+def locate_content_bottom(img_array, debug_fn=None, bg_color=None):
     if bg_color is None:
         bg_color = [255, 255, 255]
     height, width = img_array.shape[:2]
@@ -63,7 +63,7 @@ def ocr(img):
     text = pytesseract.image_to_string(img, config=options)
     return text
 
-def extract_read_count(img_array, debug_fn, bottom, bg_color=None):
+def extract_read_count(img_array, bottom, debug_fn=None, bg_color=None):
     if bg_color is None:
         bg_color = [255, 255, 255]
 
