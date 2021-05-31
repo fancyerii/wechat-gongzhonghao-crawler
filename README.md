@@ -1,5 +1,7 @@
 # wechat-gongzhonghao-crawler(微信公众号爬虫)
 
+#[](imgs/crawler.gif)
+
 这个项目是通过pywinauto控制windows(win10)上的微信PC客户端来实现公众号文章的抓取。代码分成server和client两部分。server接收client抓取的微信公众号文章，并且保存到数据库。另外server支持简单的搜索和导出功能。client通过pywinauto实现微信公众号文章的抓取。
 
 ## 安装和部署
@@ -175,7 +177,7 @@ java -cp weichat-crawler-server-1.0-jar-with-dependencies.jar com.github.fancyer
 因为爬虫的工作原理是控制微信，所以需要去掉windows的自动锁屏功能。具体方法可以参考[这篇文章](https://jingyan.baidu.com/article/91f5db1b00c5b31c7f05e3cb.html)。
 
 #### 安装tesseract
-v1.1新增，如果需要抓取阅读数需要安装它。安装方法参考[这里](https://fancyerii.github.io/2021/05/25/pywinauto-wechat-crawler-3/#%E5%AE%89%E8%A3%85windows%E7%89%88%E6%9C%AC%E7%9A%84tesseract)，请记得确认安装的路径是“C:\Program Files\Tesseract-OCR\tesseract”，目前的代码还不能
+v1.1新增，如果需要抓取阅读数需要安装它。安装方法参考[这里](https://fancyerii.github.io/2021/05/25/pywinauto-wechat-crawler-3/#%E5%AE%89%E8%A3%85windows%E7%89%88%E6%9C%AC%E7%9A%84tesseract)，请记得确认安装的路径是“C:\Program Files\Tesseract-OCR\tesseract”，目前的代码还不能配置这个路径。
 
 #### 设置客户端
 首先去[release](https://github.com/fancyerii/wechat-gongzhonghao-crawler/releases)下载最新版本的cli.exe，把它放到某个目录下，然后在这个目录创建config.ini文件和gongzhonghao.txt两个文件。config.ini可以参考这个： 
