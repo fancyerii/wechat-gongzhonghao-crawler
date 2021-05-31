@@ -1,6 +1,6 @@
 # wechat-gongzhonghao-crawler(微信公众号爬虫)
 
-#[](imgs/crawler.gif)
+![](imgs/crawler.gif)
 
 这个项目是通过pywinauto控制windows(win10)上的微信PC客户端来实现公众号文章的抓取。代码分成server和client两部分。server接收client抓取的微信公众号文章，并且保存到数据库。另外server支持简单的搜索和导出功能。client通过pywinauto实现微信公众号文章的抓取。
 
