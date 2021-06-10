@@ -363,6 +363,11 @@ class WechatAutomator:
                         else:
                             read_count = self.extract_read_count()
 
+                    if debug_ocr:
+                        s = "{} readcount={}".format(elem_title, read_count)
+                        print(s)
+                        WechatAutomator.add_to_detail(s, detail)
+
                     items.append((url, rect, elem_title, html, pub_date, read_count))
 
                 if url and stop_on_url_exist:
@@ -540,9 +545,11 @@ if __name__ == '__main__':
     automator.init_window(counter_interval=1)
     msgs = []
     articles = []
-    states = [{'url': 'https://mp.weixin.qq.com/s/e7EJ2URIvuEXkLweRMNKLg'}]
+    #states = [{'url': 'https://mp.weixin.qq.com/s/e7EJ2URIvuEXkLweRMNKLg'}]
+    states = []
     result = automator.crawl_gongzhonghao("新智元", articles, max_pages=5, states=states,
-                                          detail=[], latest_date="2021-05-04", crawl_counter=True)
+                                          detail=[], latest_date="2021-05-04", crawl_counter=True,
+                                          debug_ocr=True)
     print(result)
     for article in articles:
         url, _, title, html, pub_date, read_count = article
