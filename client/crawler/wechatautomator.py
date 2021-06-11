@@ -423,7 +423,7 @@ class WechatAutomator:
                     bottom = imgtool.locate_content_bottom(img_array, fn+"_fine_"+str(i))
                 else:
                     bottom = imgtool.locate_content_bottom(img_array)
-            elif bottom > height - 50:
+            elif bottom > height - 10:
                 self.browser_key(1, "{DOWN}")
                 img_array = imgtool.snap_shot(self.browser.rectangle())
                 if fn:
