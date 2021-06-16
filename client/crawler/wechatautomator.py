@@ -395,7 +395,7 @@ class WechatAutomator:
     def extract_read_count(self, fn=None):
         self.browser_page_down(30)
         # 初步定位
-        for i in range(20):
+        for i in range(30):
             img_array = imgtool.snap_shot(self.browser.rectangle())
             if fn:
                 bottom = imgtool.locate_content_bottom(img_array, fn+"_coarse_"+str(i))
@@ -547,7 +547,7 @@ if __name__ == '__main__':
     articles = []
     #states = [{'url': 'https://mp.weixin.qq.com/s/e7EJ2URIvuEXkLweRMNKLg'}]
     states = []
-    result = automator.crawl_gongzhonghao("新智元", articles, max_pages=5, states=states,
+    result = automator.crawl_gongzhonghao("黄梅芦花庵", articles, max_pages=5, states=states,
                                           detail=[], latest_date="2021-05-04", crawl_counter=True,
                                           debug_ocr=True)
     print(result)

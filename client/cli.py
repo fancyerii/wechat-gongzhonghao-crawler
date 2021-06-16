@@ -1,6 +1,8 @@
 import ctypes
 import configparser
 from crawler.__main__ import main
+from crawler.imgtool import ocr
+from PIL import Image
 import os
 
 def has_admin():
@@ -17,6 +19,17 @@ if __name__ == '__main__':
 
     parser = configparser.ConfigParser()
     parser.read('config.ini', encoding="UTF-8")
+
+    test_ocr = parser.get('basic', 'test_ocr', fallback='False')
+    test_ocr = test_ocr.lower() == 'true'
+    if test_ocr:
+        if not os.path.isfile("test.png"):
+            ctypes.windll.user32.MessageBoxW(0, "当前目录下没有test.png", "测试文件不存在", 0)
+            exit(-1)
+        text = ocr(Image.open("test.png"))
+        ctypes.windll.user32.MessageBoxW(0, text, "识别结果", 0)
+        exit(0)
+
     lock_input = parser.get('basic', 'lock_input', fallback='False')
     print("lock input {}".format(lock_input))
     is_admin = has_admin()
