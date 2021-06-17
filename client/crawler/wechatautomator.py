@@ -394,13 +394,24 @@ class WechatAutomator:
 
     def extract_read_count(self, fn=None):
         self.browser_page_down(30)
+        start_row = None
+        comment_bg = None
         # 初步定位
         for i in range(30):
             img_array = imgtool.snap_shot(self.browser.rectangle())
+            if start_row is None:
+                start_row = imgtool.locate_start_row(img_array, fn)
+            if comment_bg is None:
+                comment_bg = imgtool.get_comment_bg(img_array)
+                if fn:
+                    print("comment bg color: {}".format(comment_bg))
+
             if fn:
-                bottom = imgtool.locate_content_bottom(img_array, fn+"_coarse_"+str(i))
+                bottom = imgtool.locate_content_bottom(img_array, start_row, fn+"_coarse_"+str(i),
+                                                       bg_color2=comment_bg)
             else:
-                bottom = imgtool.locate_content_bottom(img_array)
+                bottom = imgtool.locate_content_bottom(img_array, start_row,
+                                                       bg_color2=comment_bg)
             if bottom == -1:
                 self.browser_key(1, "{PGUP}")
             else:
@@ -420,16 +431,20 @@ class WechatAutomator:
                 self.browser_key(1, "{UP}")
                 img_array = imgtool.snap_shot(self.browser.rectangle())
                 if fn:
-                    bottom = imgtool.locate_content_bottom(img_array, fn+"_fine_"+str(i))
+                    bottom = imgtool.locate_content_bottom(img_array, start_row, fn+"_fine_"+str(i),
+                                                           bg_color2=comment_bg)
                 else:
-                    bottom = imgtool.locate_content_bottom(img_array)
+                    bottom = imgtool.locate_content_bottom(img_array, start_row,
+                                                           bg_color2=comment_bg)
             elif bottom > height - 10:
                 self.browser_key(1, "{DOWN}")
                 img_array = imgtool.snap_shot(self.browser.rectangle())
                 if fn:
-                    bottom = imgtool.locate_content_bottom(img_array, fn + "_fine_" + str(i))
+                    bottom = imgtool.locate_content_bottom(img_array, start_row, fn + "_fine_" + str(i),
+                                                           bg_color2=comment_bg)
                 else:
-                    bottom = imgtool.locate_content_bottom(img_array)
+                    bottom = imgtool.locate_content_bottom(img_array, start_row,
+                                                           bg_color2=comment_bg)
             else:
                 found = True
                 break
