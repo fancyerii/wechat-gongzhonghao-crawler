@@ -7,6 +7,7 @@ from datetime import datetime
 import time
 import traceback
 import re
+from pywinauto.timings import Timings
 
 import crawler.imgtool as imgtool
 
@@ -19,7 +20,8 @@ class WechatAutomator:
                     counter_interval=48 * 3600,
                     read_count_init_pg_down=5,
                     win_width=1000,
-                    win_height=600):
+                    win_height=600,
+                    find_window_timeout=30):
         app = Application(backend="uia").connect(path=exe_path)
         self.main_win = app.window(title=u"微信", class_name="WeChatMainWndForPC")
         self.main_win.set_focus()
@@ -35,6 +37,8 @@ class WechatAutomator:
         # 为了让移动窗口，同时使用非uia的backend，这是pywinauto的uia的一个bug
         self.app2 = Application().connect(path=exe_path)
         self.move_window()
+
+        Timings.window_find_timeout = find_window_timeout
 
     def move_window(self):
         self.app2.window(title=u"微信", class_name="WeChatMainWndForPC").move_window(0, 0, width=self.win_width,
@@ -118,9 +122,15 @@ class WechatAutomator:
 
         for page in range(0, max_pages):
             items = []
-            last_visited_titles = self.process_page(account_name, items, last_visited_titles, states,
+            try:
+                last_visited_titles = self.process_page(account_name, items, last_visited_titles, states,
                                                     visited_urls, detail, True,
                                                     debug_ocr, counter_only=True)
+            except:
+                s = "counter process_page {} fail".format(page)
+                print(s)
+                WechatAutomator.add_to_detail(s, detail)
+
             results.extend(items)
 
             if len(items) == 0:
@@ -182,9 +192,15 @@ class WechatAutomator:
         crawl_read_count = crawl_counter and latest_date is not None
         for page in range(0, max_pages):
             items = []
-            last_visited_titles = self.process_page(account_name, items, last_visited_titles, states,
+            try:
+                last_visited_titles = self.process_page(account_name, items, last_visited_titles, states,
                                                     visited_urls, detail, crawl_read_count,
                                                     debug_ocr, stop_on_url_exist=True)
+            except:
+                s = "process_page {} fail".format(page)
+                print(s)
+                WechatAutomator.add_to_detail(s, detail)
+
             articles.extend(items)
 
             if len(items) == 0:
