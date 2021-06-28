@@ -72,6 +72,7 @@ def main(parser):
     debug_count = int(parser.get('basic', "debug_count", fallback="10"))
     latest_date = parser.get('basic', 'latest_date', fallback=None)
     first_pages = int(parser.get('basic', 'first_pages', fallback="1"))
+    find_window_timeout = int(parser.get('basic', 'find_window_timeout', fallback='30'))
 
     first_max_crawl_time = int(parser.get('basic', 'first_max_crawl_time', fallback="86400"))
     switch_gongzhonghao = parser.get('basic', 'switch_gongzhonghao', fallback=None)
@@ -95,6 +96,7 @@ def main(parser):
     print("first_pages: {}".format(first_pages))
     print("crawl_read_count: {}".format(crawl_read_count))
     print("debug_ocr: {}".format(debug_ocr))
+    print("find_window_timeout: {}".format(find_window_timeout))
 
     cwd = os.getcwd()
     print("current directory {}".format(cwd))
@@ -114,10 +116,12 @@ def main(parser):
     debug_info["crawl_read_count"] = crawl_read_count
     debug_info["counter_interval_seconds"] = counter_interval_seconds
     debug_info["debug_ocr"] = debug_ocr
+    debug_info["find_window_timeout"] = find_window_timeout
 
     automator = WechatAutomator()
     try:
-        automator.init_window(counter_interval=counter_interval_seconds)
+        automator.init_window(counter_interval=counter_interval_seconds,
+                              find_window_timeout=find_window_timeout)
     except:
         print("微信未启动或未登陆，请启动微信并扫码登陆后再运行本程序。")
         return

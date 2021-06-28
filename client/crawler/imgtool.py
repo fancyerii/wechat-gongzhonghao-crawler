@@ -1,4 +1,5 @@
 from PIL import ImageGrab, Image
+from collections import Counter
 import numpy as np
 import re
 import pytesseract
@@ -37,17 +38,54 @@ LEFT_MOST = 20
 RIGHT_MOST = -20
 MAX_SEARCH_ROW = 100
 
+def _is_possible_bg(pixel):
+    return pixel[0] == pixel[1] and pixel[1] == pixel[2] and pixel[0] > 200
 
-def locate_content_bottom(img_array, debug_fn=None, bg_color=None):
+def get_comment_bg(img_array):
+    height, width = img_array.shape[:2]
+    col = 10
+    counter = Counter()
+    for row in range(height-50, height-5):
+        if _is_possible_bg(img_array[row][col]):
+            counter[tuple(img_array[row][col])] += 1
+
+    top = counter.most_common(1)
+    if top:
+        return top[0][0]
+    else:
+        return None
+
+def locate_start_row(img_array, debug_fn=None, bg_color=None):
     if bg_color is None:
         bg_color = [255, 255, 255]
     height, width = img_array.shape[:2]
     col = 10
+    found = False
+    for row in range(5, height-5):
+        if not np.all(img_array[row, col] == bg_color):
+            found = True
+            break
+    if not found:
+        return 200
+
+    row += 5
+
+    if debug_fn:
+        draw_bbox(img_array, (0, row, width-1, row+1), debug_fn + "-start-row.png")
+    return row
+
+def locate_content_bottom(img_array, start_row, debug_fn=None, bg_color=None, bg_color2=None):
+    if bg_color is None:
+        bg_color = [255, 255, 255]
+    if bg_color2 is None:
+        bg_color2 = [242, 242, 242]
+    height, width = img_array.shape[:2]
+    col = 10
     has_content = False
-    for row in range(100, height-5):
+    for row in range(start_row, height-5):
         if np.all(img_array[row, col] == bg_color):
             has_content = True
-        else:
+        elif np.all(img_array[row, col] == bg_color2):
             break
 
     if debug_fn:
@@ -103,7 +141,7 @@ def extract_read_count(img_array, bottom, debug_fn=None, bg_color=None):
 def _extract_count(s):
     if s is None:
         return -1
-    if "阅读" not in s:
+    if "阅读" not in s and "观看" not in s:
         return -1
     try:
         res = re.search('([0-9.]+)万+', s)
