@@ -347,7 +347,7 @@ clear_pass=12345
 参数salt和iv是加密用的，可以修改，但是下面Java Server的配置文件需要使用相同的值。clear_pass是通过远程的方式清除缓存密码的密码，这是远程(非本地)可以访问的，一定要修改为一个安全的密码。
 
 ```
-nohup java -cp weichat-crawler-server-1.1-SNAPSHOT-jar-with-dependencies.jar com.github.fancyerii.weichatcrawler.server.service.WeichatSyncServer 2>&1 &
+nohup java -cp wechat-crawler-server-1.1-SNAPSHOT-jar-with-dependencies.jar com.github.fancyerii.wechatcrawler.server.service.WechatSyncServer 2>&1 &
 ```
 
 #### 为客户端创建用户名和密码
@@ -375,7 +375,7 @@ iv=3FZEMcOdhXdXsYgQZR7LPw==
 配置说明：
 
 * server_url
-    * 设置中心服务器的url，前面的WeichatSyncServer默认会监听在7654端口。
+    * 设置中心服务器的url，前面的WechatSyncServer默认会监听在7654端口。
 * do_sync
     * 设置为true时，Java Server会定期同步数据到中心服务器。否则不同步数据。
 * wechat_id
