@@ -164,7 +164,8 @@ MYSQL_PASS=mypass
 
 然后在命令行执行：
 ```
-java -cp weichat-crawler-server-1.0-jar-with-dependencies.jar com.github.fancyerii.weichatcrawler.server.service.WeichatCrawlerServer
+java -cp wechat-crawler-server-1.0-jar-with-dependencies.jar com.github.fancyerii.wechatcrawler.server.service.WeichatCrawlerServer
+
 ```
 
 ### Client的安装
@@ -230,7 +231,7 @@ switch_gongzhonghao = 北京动物园
 
 请执行如下命令收集信息反馈给开发者：
 ```
-java -cp weichat-crawler-server-xxx-jar-with-dependencies.jar com.github.fancyerii.weichatcrawler.server.service.DumpDebugInfo debug-info.txt
+java -cp wechat-crawler-server-xxx-jar-with-dependencies.jar com.github.fancyerii.wechatcrawler.server.service.DumpDebugInfo debug-info.txt
 ```
 
 请把debug-info.txt发送给开发者进行诊断。 
