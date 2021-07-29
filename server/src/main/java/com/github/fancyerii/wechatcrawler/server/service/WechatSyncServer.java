@@ -1,5 +1,6 @@
 package com.github.fancyerii.wechatcrawler.server.service;
 
+import com.antbrains.httpclientfetcher.FileTools;
 import com.antbrains.mysqltool.PoolManager;
 import com.github.fancyerii.wechatcrawler.server.data.Counter;
 import com.github.fancyerii.wechatcrawler.server.data.MysqlArchiver;
@@ -15,6 +16,7 @@ import spark.Route;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
+import java.io.File;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -62,7 +64,7 @@ public class WechatSyncServer {
 
     public String decypt(String wechatId, String text) throws Exception {
         SecretKey key = getKey(wechatId);
-        if (key == null) throw new RuntimeException("weichatId未注册，请联系管理员");
+        if (key == null) throw new RuntimeException("weichatId: " + wechatId + "，未注册，请联系管理员");
         return Tool.decrypt(algorithm, text, key, ivParameterSpec);
     }
 
