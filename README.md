@@ -148,15 +148,13 @@ CREATE TABLE `counter` (
 
 如果用户从v1.0升级到v1.1，则只需要新增counter表就行。
 
-更新点赞和在读的信息：
+升级到v1.2：
 
 ```
 ALTER TABLE `counter`
 ADD COLUMN `star_count` int DEFAULT -1,
 ADD COLUMN `share_count` int DEFAULT -1;
 
-
-ALTER TABLE `all_counters` ADD COLUMN `share_count` int DEFAULT 0;
 ```
 
 如果用户从v1.1升级到v1.2，只需要执行上面的命令就行。
@@ -346,6 +344,11 @@ CREATE TABLE `wechat_pass` (
   PRIMARY KEY (`wechat_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4;
 
+```
+
+升级到v1.2：
+```
+ALTER TABLE `all_counters` ADD COLUMN `share_count` int DEFAULT 0;
 ```
 
 #### 启动中心服务器的数据接受服务
