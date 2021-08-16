@@ -148,6 +148,19 @@ CREATE TABLE `counter` (
 
 如果用户从v1.0升级到v1.1，则只需要新增counter表就行。
 
+更新点赞和在读的信息：
+
+```
+ALTER TABLE `counter`
+ADD COLUMN `star_count` int DEFAULT -1,
+ADD COLUMN `share_count` int DEFAULT -1;
+
+
+ALTER TABLE `all_counters` ADD COLUMN `share_count` int DEFAULT 0;
+```
+
+如果用户从v1.1升级到v1.2，只需要执行上面的命令就行。
+
 #### 安装JDK并启动服务
 
 用户可以在[这里](./tools/jdk-8u271-windows-x64.exe)下载JDK，或者根据自己的机器选择其它版本的JDK。安装后需要设置环境变量，确保可以通过cmd运行Java。

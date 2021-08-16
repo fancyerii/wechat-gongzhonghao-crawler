@@ -5,7 +5,7 @@
 	<groupId>com.github.fancyerii</groupId>
 	<artifactId>wechat-crawler-server</artifactId>
 	<packaging>jar</packaging>
-	<version>1.1.4</version>
+	<version>1.2</version>
 	<name>wechat-crawler-server</name>
 	<url>http://maven.apache.org</url>
 	<dependencies>
