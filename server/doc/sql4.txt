@@ -1,0 +1,6 @@
+ALTER TABLE `counter`
+ADD COLUMN `star_count` int DEFAULT -1,
+ADD COLUMN `share_count` int DEFAULT -1;
+
+
+ALTER TABLE `all_counters` ADD COLUMN `share_count` int DEFAULT 0;

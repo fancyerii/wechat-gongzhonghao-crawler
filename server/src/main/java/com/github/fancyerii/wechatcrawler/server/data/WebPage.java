@@ -18,4 +18,6 @@ public class WebPage {
     private Date lastUpdate;
     private String crawlWechatId;
     private int readCount;
+    private int starCount;
+    private int shareCount;
 }

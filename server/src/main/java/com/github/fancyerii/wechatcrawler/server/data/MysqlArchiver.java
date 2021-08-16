@@ -252,18 +252,21 @@ public class MysqlArchiver {
         return states;
     }
 
-    public void upsertCounter(int id, String crawlWechatId, int readCount) throws Exception {
+    public void upsertCounter(int id, String crawlWechatId, int readCount,
+                              int starCount, int shareCount) throws Exception {
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
             conn = PoolManager.getConnection();
 
-            pstmt = conn.prepareStatement("insert into counter(id, read_count, crawl_wechat_id, last_update)" +
-                    "values(?,?,?,now()) on duplicate key update read_count=VALUES(read_count), " +
-                    "crawl_wechat_id=VALUES(crawl_wechat_id), last_update=now()");
+            pstmt = conn.prepareStatement("insert into counter(id, read_count, crawl_wechat_id, last_update, star_count, share_count)" +
+                    "values(?,?,?,now(),?,?) on duplicate key update read_count=VALUES(read_count), " +
+                    "crawl_wechat_id=VALUES(crawl_wechat_id), last_update=now(), star_count=VALUES(star_count), share_count=VALUES(share_count)");
             pstmt.setInt(1, id);
             pstmt.setInt(2, readCount);
             pstmt.setString(3, crawlWechatId);
+            pstmt.setInt(4, starCount);
+            pstmt.setInt(5, shareCount);
             pstmt.executeUpdate();
 
         } finally {
@@ -391,15 +394,17 @@ public class MysqlArchiver {
         try {
             conn = PoolManager.getConnection();
             pstmt = conn.prepareStatement(
-                    "insert into all_counters(url, read_count, last_update, crawl_wechat_id)" +
-                            " values(?,?,now(),?)" +
-                            " ON DUPLICATE KEY UPDATE read_count=VALUES(read_count), star_count=VALUES(star_count), " +
+                    "insert into all_counters(url, read_count, last_update, crawl_wechat_id, star_count, share_count)" +
+                            " values(?,?,now(),?,?,?)" +
+                            " ON DUPLICATE KEY UPDATE read_count=VALUES(read_count)," +
                             "last_update=now(), " +
-                            "crawl_wechat_id=VALUES(crawl_wechat_id), rvs=VALUES(rvs)");
+                            "crawl_wechat_id=VALUES(crawl_wechat_id), rvs=VALUES(rvs)," +
+                            "star_count=VALUES(star_count), share_count=VALUES(share_count)");
             pstmt.setString(1, counter.getUrl());
             pstmt.setInt(2, counter.getReadCount());
             pstmt.setString(3, counter.getCrawlWechatId());
-
+            pstmt.setInt(4, counter.getStarCount());
+            pstmt.setInt(5, counter.getShareCount());
             pstmt.executeUpdate();
 
         } finally {
@@ -773,6 +778,8 @@ public class MysqlArchiver {
                 counters.add(counter);
                 counter.setUrl(rs.getString("url"));
                 counter.setReadCount(rs.getInt("read_count"));
+                counter.setStarCount(rs.getInt("star_count"));
+                counter.setShareCount(rs.getInt("share_count"));
                 counter.setCrawlWechatId(rs.getString("crawl_wechat_id"));
             }
 

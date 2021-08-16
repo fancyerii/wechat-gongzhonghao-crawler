@@ -200,7 +200,8 @@ public class WechatCrawlerServer {
                 result.put("id", id);
                 archiver.initState(page);
                 if(page.getReadCount()>0){
-                    archiver.upsertCounter(id,page.getCrawlWechatId() , page.getReadCount());
+                    archiver.upsertCounter(id,page.getCrawlWechatId() , page.getReadCount(),
+                            page.getStarCount(), page.getShareCount());
                 }
                 archiver.updateHeartbeat(page.getCrawlWechatId(), "add-url");
                 result.put("success", true);
@@ -268,9 +269,18 @@ public class WechatCrawlerServer {
                         result.put("msg", "read为空或者非整数");
                         return result;
                     }
+                    Integer starCount = Tool.getInt(jo.get("star").getAsString());
+                    if(starCount == null){
+                        starCount = -1;
+                    }
+
+                    Integer shareCount = Tool.getInt(jo.get("share").getAsString());
+                    if(shareCount == null){
+                        shareCount = -1;
+                    }
 
                     bState = true;
-                    archiver.upsertCounter(id, wechatId, readCount);
+                    archiver.upsertCounter(id, wechatId, readCount, starCount, shareCount);
                 } else if (state.equalsIgnoreCase("false")) {
                     bState = false;
                 } else {
