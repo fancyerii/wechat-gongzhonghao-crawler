@@ -1,9 +1,13 @@
 package com.github.fancyerii.wechatcrawler.server.data;
 
+import com.antbrains.httpclientfetcher.FileTools;
 import com.antbrains.mysqltool.DBUtils;
 import com.antbrains.mysqltool.PoolManager;
 import com.github.fancyerii.wechatcrawler.server.service.WebContentCrawler;
+import com.github.fancyerii.wechatcrawler.server.tool.MyDateTypeAdapter;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
@@ -456,8 +460,9 @@ public class MysqlArchiver {
                     "insert into all_pages(url, title, pub_name, pub_time, html, last_update, crawl_wechat_id, content)" +
                             " values(?,?,?,?,?,now(),?,?)" +
                             " ON DUPLICATE KEY UPDATE title=VALUES(title), pub_name=VALUES(pub_name), " +
-                            "pub_time=VALUES(pub_time), content=VALUES(html), last_update=now(), " +
+                            "pub_time=VALUES(pub_time), html=VALUES(html), last_update=now(), " +
                             "crawl_wechat_id=VALUES(crawl_wechat_id), content=VALUES(content)");
+
             pstmt.setString(1, page.getUrl());
             pstmt.setString(2, page.getTitle());
             pstmt.setString(3, page.getPubName());
@@ -849,13 +854,13 @@ public class MysqlArchiver {
 //                System.out.println(i + "->" + p);
 //            }
 //        }
-        WebPage page = new WebPage();
-        page.setCrawlWechatId("lili");
-        page.setUrl("http://www.com");
-        page.setPubName("环球2");
-        page.setPubTime(Calendar.getInstance().getTime());
-        page.setTitle("标题2");
-        page.setContent("html12");
-        archiver.upsertAllWebPages(page);
+        Gson gson = new GsonBuilder().registerTypeAdapter(Date.class, new MyDateTypeAdapter()).create();
+        String body= FileTools.readFile("/home/lili/error.txt", "UTF-8");
+        List<WebPage> pages = gson.fromJson(body, new TypeToken<List<WebPage>>() {
+        }.getType());
+
+        for (WebPage page : pages) {
+            archiver.upsertAllWebPages(page);
+        }
     }
 }

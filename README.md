@@ -164,7 +164,8 @@ MYSQL_PASS=mypass
 
 然后在命令行执行：
 ```
-java -cp weichat-crawler-server-1.0-jar-with-dependencies.jar com.github.fancyerii.weichatcrawler.server.service.WeichatCrawlerServer
+java -cp wechat-crawler-server-1.0-jar-with-dependencies.jar com.github.fancyerii.wechatcrawler.server.service.WeichatCrawlerServer
+
 ```
 
 ### Client的安装
@@ -230,7 +231,7 @@ switch_gongzhonghao = 北京动物园
 
 请执行如下命令收集信息反馈给开发者：
 ```
-java -cp weichat-crawler-server-xxx-jar-with-dependencies.jar com.github.fancyerii.weichatcrawler.server.service.DumpDebugInfo debug-info.txt
+java -cp wechat-crawler-server-xxx-jar-with-dependencies.jar com.github.fancyerii.wechatcrawler.server.service.DumpDebugInfo debug-info.txt
 ```
 
 请把debug-info.txt发送给开发者进行诊断。 
@@ -284,6 +285,112 @@ pyinstaller.exe --onefile cli.py
 pip uninstall pywin32
 pip install pywin32==228
 ```
+
+### 把本地抓取的数据同步到中心服务器
+
+如果抓取的微信公众号特别多，那么可能我们会部署多台服务器进行抓取。按照默认配置，每台机器抓取的结果都保存在本地的mysql中。当然我们可以写一些脚本把这些数据进行汇总，但是仍然有一些逻辑需要考虑，比如增量同步等等。为了避免这些麻烦，本项目提供了数据同步的功能。
+
+为了实现这个功能，需要有一台可以被抓取服务器访问的中心服务器，我们这里假设中心服务器的域名为center_server(如果没有域名可以改成外网ip)。
+
+#### 中心服务器建表
+
+
+我们首先在中心服务器的mysql上建立wechat数据库，设置用户名和密码。然后建立如下表：
+
+```
+
+
+use wechat;
+
+CREATE TABLE `all_pages` (
+  `url` varchar(512) NOT NULL,
+  `title` varchar(1024) NOT NULL,
+  `pub_name` varchar(128) NOT NULL,
+  `pub_time` datetime DEFAULT NULL,
+  `html` mediumblob,
+  `content` mediumtext,
+  `last_update` datetime DEFAULT NULL,
+  `crawl_wechat_id` varchar(128) DEFAULT NULL,
+  PRIMARY KEY (`url`),
+  KEY `last_update` (`last_update`),
+  KEY `pub_name` (`pub_name`),
+  KEY `crawl_wechat_id` (`crawl_wechat_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `all_counters` (
+  `url` varchar(512) NOT NULL,
+  `read_count` int DEFAULT 0,
+  `star_count` int DEFAULT 0,
+  `last_update` datetime NOT NULL,
+  `crawl_wechat_id` varchar(128) NOT NULL,
+  `rvs` mediumblob,
+  PRIMARY KEY (`url`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `wechat_pass` (
+  `wechat_id` varchar(128) NOT NULL,
+  `pass` varchar(64) NOT NULL,
+  PRIMARY KEY (`wechat_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4;
+
+```
+
+#### 启动中心服务器的数据接受服务
+
+修改配置文件conf/cfg.txt：
+
+```
+salt=chan_search
+iv=3FZEMcOdhXdXsYgQZR7LPw==
+clear_pass=12345
+```
+
+参数salt和iv是加密用的，可以修改，但是下面Java Server的配置文件需要使用相同的值。clear_pass是通过远程的方式清除缓存密码的密码，这是远程(非本地)可以访问的，一定要修改为一个安全的密码。
+
+```
+nohup java -cp wechat-crawler-server-1.1-SNAPSHOT-jar-with-dependencies.jar com.github.fancyerii.wechatcrawler.server.service.WechatSyncServer 2>&1 &
+```
+
+#### 为客户端创建用户名和密码
+
+为了安全考虑，客户端往中心服务器同步数据时会进行加密。因此需要在wechat_pass表里为客户端建立密码：
+
+```
+insert into wechat_pass values('wechat_id', 'pass');
+```
+
+注意：我们需要把wechat_id替换成Windows客户端登录的微信id；密码改成一个安全的密码。这个密码在后面的配置中会用到。
+
+#### Java Server设置
+在cfg.txt里设置：
+```
+server_url=http://center_server:7654
+do_sync=true
+
+wechat_id=....
+enc_pass=
+salt=chan_search
+iv=3FZEMcOdhXdXsYgQZR7LPw==
+```
+
+配置说明：
+
+* server_url
+    * 设置中心服务器的url，前面的WechatSyncServer默认会监听在7654端口。
+* do_sync
+    * 设置为true时，Java Server会定期同步数据到中心服务器。否则不同步数据。
+* wechat_id
+    * cli.exe抓取时使用的微信id。
+* enc_pass
+    * 前面在中心服务器配置的密码。
+* salt
+    * 和中心服务器一致
+* iv
+    * 和中心服务器一致
+
+设置后重启服务。注意：如果cli.exe还在执行，重启Java Server可能会丢失数据，因此建议等cli.exe在没有抓取或者关闭cli.exe后重启。
+
+
 
 ### 客户端代码介绍
 
