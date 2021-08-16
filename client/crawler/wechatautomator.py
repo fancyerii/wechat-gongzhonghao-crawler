@@ -468,9 +468,9 @@ class WechatAutomator:
         if not found:
             return -1
         if fn:
-            count = imgtool.extract_read_count(img_array, bottom, fn+"_locate")
+            count = imgtool.extract_counts(img_array, bottom, fn + "_locate")
         else:
-            count = imgtool.extract_read_count(img_array, bottom)
+            count = imgtool.extract_counts(img_array, bottom)
         return count
 
 
@@ -578,9 +578,9 @@ if __name__ == '__main__':
     articles = []
     #states = [{'url': 'https://mp.weixin.qq.com/s/e7EJ2URIvuEXkLweRMNKLg'}]
     states = []
-    result = automator.crawl_gongzhonghao("黄梅芦花庵", articles, max_pages=5, states=states,
+    result = automator.crawl_gongzhonghao("新智元", articles, max_pages=1, states=states,
                                           detail=[], latest_date="2021-05-04", crawl_counter=True,
-                                          debug_ocr=True)
+                                          debug_ocr=False)
     print(result)
     for article in articles:
         url, _, title, html, pub_date, read_count = article

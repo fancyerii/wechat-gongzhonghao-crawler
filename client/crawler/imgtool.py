@@ -101,7 +101,7 @@ def ocr(img):
     text = pytesseract.image_to_string(img, config=options)
     return text
 
-def extract_read_count(img_array, bottom, debug_fn=None, bg_color=None):
+def extract_counts(img_array, bottom, debug_fn=None, bg_color=None):
     if bg_color is None:
         bg_color = [255, 255, 255]
 
@@ -120,6 +120,12 @@ def extract_read_count(img_array, bottom, debug_fn=None, bg_color=None):
     if debug_fn:
         draw_bbox(img_array, (0, r2, width - 1, r2 + 1), debug_fn + "-2.png")
 
+    # r2-r是分享行
+    share_img = Image.fromarray(img_array[r2:r, :])
+    if debug_fn:
+        share_img.save(debug_fn + "-2-2.png")
+    text = ocr(share_img)
+    star, share = _extract_share(text)
     for r3 in range(r2-1, r2-MAX_SEARCH_ROW, -1):
         if not np.all(img_array[r3][LEFT_MOST:RIGHT_MOST] == bg_color):
             break
@@ -136,7 +142,31 @@ def extract_read_count(img_array, bottom, debug_fn=None, bg_color=None):
     if debug_fn:
         read_count_img.save(debug_fn + "-5.png")
     text = ocr(read_count_img)
-    return _extract_count(text)
+    return _extract_count(text), star, share
+
+def _extract_share(s):
+    if s is None:
+        return -1, -1
+    star, share = -1, -1
+    try:
+        res = re.search('赞([0-9.]+)万+', s)
+        if res:
+            star = int(10000 * float(res.group(1)))
+        else:
+            res = re.search('赞([0-9]+)', s)
+            star = int(res.group(1))
+
+        res = re.search('在看([0-9.]+)万+', s)
+        if res:
+            share = int(10000 * float(res.group(1)))
+        else:
+            res = re.search('在看([0-9]+)', s)
+            share = int(res.group(1))
+    except:
+        pass
+    return star, share
+
+
 
 def _extract_count(s):
     if s is None:
