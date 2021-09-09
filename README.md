@@ -175,9 +175,10 @@ MYSQL_PASS=mypass
 
 然后在命令行执行：
 ```
-java -cp wechat-crawler-server-1.0-jar-with-dependencies.jar com.github.fancyerii.wechatcrawler.server.service.WeichatCrawlerServer
+java -cp wechat-crawler-server-{VERSION}-jar-with-dependencies.jar com.github.fancyerii.wechatcrawler.server.service.WechatCrawlerServer
 
 ```
+请修改{VERSION}为实际文件的值。
 
 ### Client的安装
 
