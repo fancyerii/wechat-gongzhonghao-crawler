@@ -7,6 +7,8 @@ from datetime import datetime
 import time
 import traceback
 import re
+from PIL import Image
+import numpy as np
 from pywinauto.timings import Timings
 
 import crawler.imgtool as imgtool
@@ -32,6 +34,12 @@ class WechatAutomator:
         self.counter_interval = counter_interval
         self.read_count_init_pg_down = read_count_init_pg_down
         self.browser = None
+        self.template = None
+        try:
+            self.template = np.asarray(Image.open("template.png"))
+        except:
+            print("no template.png")
+
         self.win_width = win_width
         self.win_height = win_height
         # 为了让移动窗口，同时使用非uia的backend，这是pywinauto的uia的一个bug
@@ -59,6 +67,15 @@ class WechatAutomator:
 
         return wechat_id
 
+    def click_left(self, win=None):
+        if win is None:
+            rect = self.main_win.rectangle()
+        else:
+            rect = win.rectangle()
+        center = (rect.top + rect.bottom) // 2
+        right = rect.left + 10
+        self.click((right, center))
+
     def click_right(self, win=None):
         if win is None:
             rect = self.main_win.rectangle()
@@ -68,14 +85,25 @@ class WechatAutomator:
         right = rect.right - 10
         self.click((right, center))
 
-    def turn_page_up(self, n):
-        self.click_right()
+    def turn_page_up(self, n, win=None, click=True):
+        if click:
+            self.click_right(win)
         for i in range(n):
             self.main_win.type_keys("{PGUP}")
 
     @staticmethod
     def add_to_detail(s, detail):
         detail.append(time.strftime("%Y-%m-%d %H:%M:%S") + " " + str(s))
+
+
+    @staticmethod
+    def get_title(html):
+        res = re.search('<h1([^>]+)>(.*)</h1>', html, re.DOTALL|re.MULTILINE)
+        if res:
+            title = res.group(2)
+            title = title.replace("\n", " ").strip()
+            return title
+        return None
 
     @staticmethod
     def get_pubdate(html):
@@ -94,9 +122,84 @@ class WechatAutomator:
                 return True
         return False
 
-    def crawl_read_count(self, account_name, results, states, detail,
-                         max_pages=12, no_item_retry=3, debug_ocr=False,
-                         locate_user=False):
+    def crawl_fuwuhao_read_count(self, account_name, results, states, detail,
+                                    max_pages=12, no_item_retry=3, debug_ocr=False,
+                                    locate_user=False):
+        if locate_user and not self.locate_user(account_name):
+            return False
+
+        need_counter_states = []
+
+        for state in states:
+            if state["counterState"] != 0:
+                pub_date_epochs = state.get("firstAdd")
+                if pub_date_epochs and self.need_crawl_counter(pub_date_epochs):
+                    need_counter_states.append(state)
+                    s = "need counter state {} {}".format(state["url"], state["title"])
+                    logger.debug(s)
+                    WechatAutomator.add_to_detail(s, detail)
+        if len(need_counter_states) == 0:
+            return True
+
+        browser_win = self.init_fuwuhao_window(max_pages)
+
+        states = need_counter_states
+        last_visited_titles = set()
+        visited_urls = set()
+
+        pagedown_retry = 0
+        last_visited_titles = []
+
+        for page in range(0, max_pages):
+            items = []
+            date_list = self._analysis_list(browser_win, page, debug_ocr)
+            try:
+                last_visited_titles = self.process_fwh_page(page, browser_win, date_list, account_name, items, last_visited_titles, states,
+                                                    visited_urls, detail, True,
+                                                    debug_ocr, counter_only=True)
+            except:
+                traceback.print_exc()
+                s = "counter process_page {} fail".format(page)
+                print(s)
+                WechatAutomator.add_to_detail(s, detail)
+
+            results.extend(items)
+
+            if len(items) == 0:
+                pagedown_retry += 1
+                if pagedown_retry >= no_item_retry:
+                    s = "break because of retry {}".format(pagedown_retry)
+                    logger.debug(s)
+                    WechatAutomator.add_to_detail(s, detail)
+                    break
+            else:
+                pagedown_retry = 0
+
+            # 判断是否可以结束，条件是states里所有的counter_state为1的都处理过了
+            need_continue = False
+            for state in states:
+                if state["counterState"] != 0 and state["url"] not in visited_urls:
+                    need_continue = True
+                    break
+
+            if not need_continue:
+                s = "break because all states ok"
+                logger.debug(s)
+                WechatAutomator.add_to_detail(s, detail)
+                break
+
+            self.click_left(win=browser_win)
+            browser_win.type_keys("{PGDN}")
+            time.sleep(self.turn_page_interval)
+
+        browser_win.close()
+
+        return True
+
+
+    def crawl_dingyuehao_read_count(self, account_name, results, states, detail,
+                                    max_pages=12, no_item_retry=3, debug_ocr=False,
+                                    locate_user=False):
         if locate_user and not self.locate_user(account_name):
             return False
 
@@ -127,6 +230,7 @@ class WechatAutomator:
                                                     visited_urls, detail, True,
                                                     debug_ocr, counter_only=True)
             except:
+                traceback.print_exc()
                 s = "counter process_page {} fail".format(page)
                 print(s)
                 WechatAutomator.add_to_detail(s, detail)
@@ -164,12 +268,125 @@ class WechatAutomator:
 
         return True
 
+    def _analysis_list(self, browser_win, page, debug_ocr=False):
+        if debug_ocr:
+            imgtool.snap_shot_to_file(browser_win.rectangle(), "debug_fwh_list_{}.png".format(page))
+        date_list = []
+        for _ in range(3):
+            img_arr = imgtool.snap_shot(browser_win.rectangle())
+            debug_file = None
+            if debug_ocr:
+                debug_file = "debug_fwh_list_{}_locate.png".format(page)
+            date_list = imgtool.locate_articles(img_arr, debug_file=debug_file)
+            if len(date_list) > 0:
+                break
+            time.sleep(3)
+        return date_list
 
-    def crawl_gongzhonghao(self, account_name, articles, states, detail,
-                           max_pages=6, latest_date=None, no_item_retry=3,
-                           crawl_counter=False, debug_ocr=False):
+    def is_fuwuhao(self, account_name):
+        old_timeout = Timings.window_find_timeout
+        Timings.window_find_timeout = 3
+        try:
+            if not self.locate_user(account_name, retry=3):
+                return None
+            btn = self.main_win.child_window(title="聊天信息", control_type="Button")
+            btn.rectangle()
+            return True
+        except:
+            return False
+        finally:
+            Timings.window_find_timeout = old_timeout
+
+    def init_fuwuhao_window(self, max_pages):
+        btn = self.main_win.child_window(title="聊天信息", control_type="Button")
+        self.click_center(btn)
+        sub_win = self.main_win.child_window(title="微信", class_name="ContactProfileWnd")
+        btn = sub_win.child_window(title="查看历史消息", control_type="Button")
+        WechatAutomator.click_control(btn)
+
+        browser_win = self.app.window(title="微信", class_name="CefWebViewWnd")
+        #tree = self.build_tree(browser_win, goto_root=False)
+        #self.print_tree(tree)
+        time.sleep(3)
+
+        self.click_left(win=browser_win)
+        for _ in range(min(20, max_pages * 2)):
+            browser_win.type_keys("{PGUP}")
+
+        return browser_win
+
+    def crawl_fuwuhao(self, account_name, articles, states, detail,
+                      max_pages=6, latest_date=None, no_item_retry=3,
+                      crawl_counter=False, debug_ocr=False):
+
+        if not self.locate_user(account_name):
+            return False
+
+        browser_win = self.init_fuwuhao_window(max_pages)
+
+        visited_urls = set()
+        pagedown_retry = 0
+        last_visited_titles = []
+        crawl_read_count = crawl_counter and latest_date is not None
+
+        for page in range(0, max_pages):
+            date_list = self._analysis_list(browser_win, page, debug_ocr=debug_ocr)
+            items = []
+            try:
+                last_visited_titles = self.process_fwh_page(page, browser_win, date_list, account_name, items, last_visited_titles, states,
+                                                        visited_urls, detail, crawl_read_count,
+                                                        debug_ocr, stop_on_url_exist=True)
+
+            except:
+                s = "process_page {} fail".format(page)
+                print(s)
+                WechatAutomator.add_to_detail(s, detail)
+
+            articles.extend(items)
+
+            if len(items) == 0:
+                pagedown_retry += 1
+                if pagedown_retry >= no_item_retry:
+                    s = "break because of retry {}".format(pagedown_retry)
+                    logger.debug(s)
+                    WechatAutomator.add_to_detail(s, detail)
+                    break
+            else:
+                pagedown_retry = 0
+
+            if len(items) > 0 and latest_date is not None:
+                pub_date = items[-1][4]
+                if pub_date and pub_date < latest_date:
+                    s = "stop because {} < {}".format(pub_date, latest_date)
+                    logger.debug(s)
+                    WechatAutomator.add_to_detail(s, detail)
+                    break
+
+            # TODO process_page通过stop_on_url_exist已经检查过了，应该增加返回值
+            # 这里有重复检查，以后可以优化
+            url_exist = False
+            for item in items:
+                if WechatAutomator.url_in_states(item[0], states):
+                    s = "stop because url exist {}".format(item[0])
+                    logger.debug(s)
+                    WechatAutomator.add_to_detail(s, detail)
+                    url_exist = True
+                    break
+            if url_exist:
+                break
+
+            self.click_left(win=browser_win)
+            browser_win.type_keys("{PGDN}")
+            time.sleep(self.turn_page_interval)
+
+        browser_win.close()
+        return True
+
+    def crawl_dingyuehao(self, account_name, articles, states, detail,
+                         max_pages=6, latest_date=None, no_item_retry=3,
+                         crawl_counter=False, debug_ocr=False):
         '''
-        抓取一个微信公众号
+        抓取一个微信订阅号
         :param account_name:
         :param articles: 抓取的公众号文章 (url, rect, elem.element_info.name, html, pub_date, read_count)
         :param states:
@@ -280,6 +497,88 @@ class WechatAutomator:
                 return True
         return False
 
+    def process_fwh_page(self, page, win, date_list, account_name, items, lastpage_clicked_titles, states,
+                     visited_urls, detail, need_counter, debug_ocr=False,
+                     counter_only=False, stop_on_url_exist=False):
+        clicked_titles = set()
+        cc = 0
+        win_rect = win.rectangle()
+        rects = [(rect[0] + win_rect.left, rect[1] + win_rect.top, rect[2], rect[3])
+                 for rect in date_list]
+
+        for rect in rects:
+            cc += 1
+            back_btn_pos = None
+            try:
+                WechatAutomator.click_rect(rect)
+                copy_btn = win.child_window(title="复制链接地址")
+                refresh_btn = win.child_window(title="刷新")
+                fontsize_btn = win.child_window(title="字体大小")
+                r_rect = refresh_btn.rectangle()
+                r_center_x = (r_rect.left + r_rect.right) // 2
+                r_center_y = (r_rect.top + r_rect.bottom) // 2
+                f_rect = fontsize_btn.rectangle()
+                f_center_x = (f_rect.left + f_rect.right) // 2
+                f_center_y = (f_rect.top + f_rect.bottom) // 2
+                back_btn_pos = (2 * r_center_x - f_center_x,
+                                2 * r_center_y - f_center_y)
+
+                #win.print_control_identifiers()
+                self.click_control(copy_btn)
+                url = clipboard.GetData()
+                self.browser = win
+                elem_title = None
+                if url and not url in visited_urls:
+                    visited_urls.add(url)
+                    html = None
+                    pub_date_epochs = None
+                    pub_date = None
+                    if not counter_only:
+                        try:
+                            html = requests.get(url).text
+                            pub_date = WechatAutomator.get_pubdate(html)
+                            elem_title = WechatAutomator.get_title(html)
+                            date = datetime.strptime(pub_date, '%Y-%m-%d %H:%M:%S')
+                            pub_date_epochs = datetime.timestamp(date)
+                        except:
+                            s = "fail get {}".format(url)
+                            logger.debug(s)
+                            WechatAutomator.add_to_detail(s, detail)
+                    else:
+                        state = self.search_state(states, url)
+                        if not state:
+                            continue
+                        pub_date_epochs = state.get("firstAdd")
+
+                    read_count = None
+                    if need_counter and pub_date_epochs and self.need_crawl_counter(pub_date_epochs):
+                        if debug_ocr:
+                            read_count = self.extract_read_count(True, "debug-"+str(page)+"-"+str(cc))
+                        else:
+                            read_count = self.extract_read_count(True)
+
+                    if debug_ocr:
+                        s = "{} readcount={}".format(elem_title, read_count)
+                        print(s)
+                        WechatAutomator.add_to_detail(s, detail)
+
+                    items.append((url, rect, elem_title, html, pub_date, read_count))
+
+                if url and stop_on_url_exist:
+                    if self.url_in_states(url, states):
+                        s = "stop on url {} exist".format(url)
+                        logger.debug(s)
+                        WechatAutomator.add_to_detail(s, detail)
+                        break
+            except:
+                traceback.print_exc()
+            finally:
+                self.browser = None
+                if back_btn_pos:
+                    self.click(coords=back_btn_pos)
+
+        return clicked_titles
+
     def process_page(self, account_name, items, lastpage_clicked_titles, states,
                      visited_urls, detail, need_counter, debug_ocr=False,
                      counter_only=False, stop_on_url_exist=False):
@@ -375,9 +674,9 @@ class WechatAutomator:
                     read_count = None
                     if need_counter and pub_date_epochs and self.need_crawl_counter(pub_date_epochs):
                         if debug_ocr:
-                            read_count = self.extract_read_count("debug-"+str(cc))
+                            read_count = self.extract_read_count(False, "debug-"+str(cc))
                         else:
-                            read_count = self.extract_read_count()
+                            read_count = self.extract_read_count(False)
 
                     if debug_ocr:
                         s = "{} readcount={}".format(elem_title, read_count)
@@ -408,8 +707,8 @@ class WechatAutomator:
 
         return clicked_titles
 
-    def extract_read_count(self, fn=None):
-        self.browser_page_down(30)
+    def extract_read_count(self, is_fuwuhao, fn=None):
+        self.browser_page_down(50)
         start_row = None
         comment_bg = None
         # 初步定位
@@ -434,7 +733,9 @@ class WechatAutomator:
                 break
         # 没找到
         if bottom == -1:
-            return None
+            s = "无法定位背景"
+            print(s)
+            return -1, -1, -1
 
         height, width = img_array.shape[:2]
         content_height = height - self.visible_top
@@ -466,21 +767,35 @@ class WechatAutomator:
                 break
 
         if not found:
-            return -1
+            return -1, -1, -1
         if fn:
-            count = imgtool.extract_counts(img_array, bottom, fn + "_locate")
+            count, template = imgtool.extract_counts(is_fuwuhao, img_array, bottom, fn + "_locate",
+                                           template_img=self.template)
         else:
-            count = imgtool.extract_counts(img_array, bottom)
+            count, template = imgtool.extract_counts(is_fuwuhao, img_array, bottom,
+                                                     template_img=self.template)
+        if self.template is None and template is not None:
+            self.template = template
+            Image.fromarray(template).save("template.png")
+
         return count
 
+    def print_tree(self, tree, level=0):
+        print(" "*level, end="")
+        print(tree["name"])
+        for child in tree["children"]:
+            self.print_tree(child, level + 1)
 
-    def build_tree(self, win):
-        text = win
-        parent = text
-        root = parent
-        while parent:
+    def build_tree(self, win, goto_root=True):
+        if goto_root:
+            text = win
+            parent = text
             root = parent
-            parent = parent.parent()
+            while parent:
+                root = parent
+                parent = parent.parent()
+        else:
+            root = win
 
         return self.recur_build_tree(root)
 
@@ -511,6 +826,22 @@ class WechatAutomator:
         pywinauto.mouse.move((coords[0], coords[1]))
         pywinauto.mouse.double_click(coords=(coords[0], coords[1]))
 
+    @staticmethod
+    def click_rect(rect):
+        x, y, w, h = rect
+        xx = x + w // 2
+        yy = y + h // 2
+        pywinauto.mouse.move((xx, yy))
+        pywinauto.mouse.click(coords=(xx, yy))
+
+    @staticmethod
+    def click_control(control):
+        coords = control.rectangle()
+        x = (coords.left + coords.right) // 2
+        y = (coords.top + coords.bottom) // 2
+        pywinauto.mouse.move((x, y))
+        pywinauto.mouse.click(coords=(x, y))
+
     def click_center(self, control, click_main=True):
         coords = control.rectangle()
         if click_main:
@@ -526,7 +857,7 @@ class WechatAutomator:
     def browser_page_down(self, pages, sleep_time=0):
         rect = self.browser.rectangle()
         x = rect.left + 10
-        y = (rect.top + rect.bottom) //2
+        y = (rect.top + rect.bottom) // 2
 
         pywinauto.mouse.move((x, y))
         pywinauto.mouse.click(coords=(x, y))
@@ -578,11 +909,20 @@ if __name__ == '__main__':
     articles = []
     #states = [{'url': 'https://mp.weixin.qq.com/s/e7EJ2URIvuEXkLweRMNKLg'}]
     states = []
-    result = automator.crawl_gongzhonghao("新智元", articles, max_pages=1, states=states,
-                                          detail=[], latest_date="2021-05-04", crawl_counter=True,
-                                          debug_ocr=False)
-    print(result)
+    #result = automator.crawl_fuwuhao("法物流通处", articles, max_pages=2, states=states,
+    #                                   detail=[], latest_date="2021-01-01", crawl_counter=True,
+    #                                   debug_ocr=True)
+    #print(result)
+    result = automator.crawl_dingyuehao("新智元", articles, max_pages=3, states=states,
+                                         detail=[], latest_date="2021-05-04", crawl_counter=True,
+                                         debug_ocr=False)
+    # print(result)
     for article in articles:
         url, _, title, html, pub_date, read_count = article
         print(title, pub_date, read_count)
 
+
+    # accounts = ["华为终端客户服务", "法物流通处", "北京动物园", "中国农业博物馆", "足球联赛"]
+    # for acc in accounts:
+    #     res = automator.is_fuwuhao(acc)
+    #     print("{} 是否服务号: {}", acc, res)

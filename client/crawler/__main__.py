@@ -130,6 +130,7 @@ def main(parser):
     debug_info["wechat_id"] = wechat_id
     debug_info["details"] = []
 
+    account_is_fuwuhao = {}
     while True:
         automator.move_window()
         start_time = int(time.time())
@@ -159,8 +160,18 @@ def main(parser):
             line = line.strip()
             if line == '':
                 continue
+            is_fuwuhao = account_is_fuwuhao.get(line)
+            if is_fuwuhao is None:
+                is_fuwuhao = automator.is_fuwuhao(line)
+                if is_fuwuhao is None:
+                    print("账号{}不能确定是否服务号，请联系开发修复bug".format(line))
+                    continue
+                account_is_fuwuhao[line] = is_fuwuhao
+            s = "{} 是否服务号 {}".format(line, is_fuwuhao)
+            print(s)
             details = debug_info["details"]
             detail = []
+            detail.append(s)
             details.append(detail)
             # 只保留
             if len(details) > debug_count:
@@ -219,23 +230,36 @@ def main(parser):
                 s = "curr_max: {}, curr_pages: {}".format(curr_max_pages, curr_crawl_pages)
                 print(s)
                 add_to_detail(s, detail)
-                result = automator.crawl_gongzhonghao(line, articles,
-                                                      states=states, max_pages=curr_max_pages,
-                                                      detail=detail, latest_date=curr_latest_date,
-                                                      crawl_counter=crawl_read_count,
-                                                      debug_ocr=debug_ocr)
+                if is_fuwuhao:
+                    result = automator.crawl_fuwuhao(line, articles,
+                                                        states=states, max_pages=curr_max_pages,
+                                                        detail=detail, latest_date=curr_latest_date,
+                                                        crawl_counter=crawl_read_count,
+                                                        debug_ocr=debug_ocr)
+                else:
+                    result = automator.crawl_dingyuehao(line, articles,
+                                                    states=states, max_pages=curr_max_pages,
+                                                    detail=detail, latest_date=curr_latest_date,
+                                                    crawl_counter=crawl_read_count,
+                                                    debug_ocr=debug_ocr)
                 s = "抓取 {} 成功: {}".format(line, result)
                 add_to_detail(s, detail)
                 print(s)
                 if result:
                     for article in articles:
-                        url, _, title, html, pub_date, read_count = article
+                        url, _, title, html, pub_date, counts = article
+                        if counts:
+                            read_count, star_count, share_count = counts
+                        else:
+                            read_count, star_count, share_count = -1, -1, -1
                         if not url_in_states(url, states):
                             page = {"url": url,
                                     "crawlWechatId": wechat_id,
                                     "title": title,
                                     "pubName": line,
                                     "readCount": read_count,
+                                    "starCount": star_count,
+                                    "shareCount": share_count,
                                     "html": html}
                             s = "addurl: {}".format(page["url"])
                             add_to_detail(s, detail)
@@ -250,15 +274,19 @@ def main(parser):
 
                 if crawl_read_count and not is_first_crawl:
                     results = []
-
-                    res = automator.crawl_read_count(line, results, states, detail,
-                                               max_pages=curr_max_pages, debug_ocr=debug_ocr)
+                    if is_fuwuhao:
+                        res = automator.crawl_fuwuhao_read_count(line, results, states, detail,
+                                                                 max_pages=curr_max_pages, debug_ocr=debug_ocr)
+                    else:
+                        res = automator.crawl_dingyuehao_read_count(line, results, states, detail,
+                                                                max_pages=curr_max_pages, debug_ocr=debug_ocr)
                     s = "抓取 readcount {} 成功: {}".format(line, res)
                     add_to_detail(s, detail)
                     print(s)
                     if res:
                         for item in results:
-                            url, _, title, html, pub_date, read_count = item
+                            url, _, title, html, pub_date, counts = item
+                            read_count, star_count, share_count = counts
                             if read_count <= 0:
                                 s = "{} {} no url".format(url, title)
                                 print(s)
@@ -275,7 +303,9 @@ def main(parser):
                             params = {'wechatId': wechat_id,
                                       'id': page_id,
                                       "state": True,
-                                      "read": read_count
+                                      "read": read_count,
+                                      "star": star_count,
+                                      "share": share_count
                                       }
                             s = "counter params: {}".format(params)
                             add_to_detail(s, detail)
