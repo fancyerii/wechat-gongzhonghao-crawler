@@ -141,8 +141,12 @@ def main(parser):
             print(s)
             time.sleep(60)
             continue
-        with open('gongzhonghao.txt', encoding="UTF-8") as f:
-            lines = f.read().splitlines()
+        try:
+            with open('gongzhonghao.txt', encoding="UTF-8") as f:
+                lines = f.read().splitlines()
+        except:
+            print("打开gongzhonghao.txt失败，请确保它是utf编码的文本文件")
+            return
         print("抓取的公众号列表：")
         for line in lines:
             print("\t{}".format(line))

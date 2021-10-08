@@ -46,8 +46,6 @@ if __name__ == '__main__':
             if blocked:
                 try:
                     main(parser)
-                except:
-                    print("except")
                 finally:
                     unblocked = BlockInput(False)  # unblock in any case
             else:
