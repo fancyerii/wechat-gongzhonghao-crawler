@@ -184,7 +184,7 @@ java -cp wechat-crawler-server-{VERSION}-jar-with-dependencies.jar com.github.fa
 
 #### 安装和登录微信
 
-请下载的[微信安装程序](./tools/jdk-8u271-windows-x64.exe)安装，安装完成后参考[这篇文章](https://jingyan.baidu.com/article/656db9184040b5a380249c66.html)禁止微信自动升级，然后扫码登录。请读者使用3.1版本的微信客户端，因为版本升级或者变化可能导致代码无法正常运行。
+请下载的[微信安装程序](./tools/WeChatSetup-3.1.0.exe)安装，安装完成后参考[这篇文章](https://jingyan.baidu.com/article/656db9184040b5a380249c66.html)禁止微信自动升级，然后扫码登录。请读者使用3.1版本的微信客户端，因为版本升级或者变化可能导致代码无法正常运行。
 
 #### 系统设置
 因为爬虫的工作原理是控制微信，所以需要去掉windows的自动锁屏功能。具体方法可以参考[这篇文章](https://jingyan.baidu.com/article/91f5db1b00c5b31c7f05e3cb.html)。
