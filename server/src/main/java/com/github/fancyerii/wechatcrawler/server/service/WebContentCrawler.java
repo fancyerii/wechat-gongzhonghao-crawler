@@ -29,13 +29,13 @@ public class WebContentCrawler implements Runnable {
         fetcher.init();
     }
 
-    static Pattern timePtn = Pattern.compile("var t=\"(\\d+)\",n=\"(\\d+)\",i=\"[^;]+\";");
+    static Pattern timePtn = Pattern.compile("var [^;]*n=\"(\\d+)\"[^;]*;");
 
     public static Date extPubDate(String html) {
         if (html == null) return null;
         Matcher m = timePtn.matcher(html);
         if (m.find()) {
-            long pubTime = Integer.valueOf(m.group(2)) * 1000L;
+            long pubTime = Integer.valueOf(m.group(1)) * 1000L;
             return new Date(pubTime);
         }
         return null;
