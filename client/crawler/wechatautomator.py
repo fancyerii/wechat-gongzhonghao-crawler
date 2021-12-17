@@ -107,12 +107,13 @@ class WechatAutomator:
 
     @staticmethod
     def get_pubdate(html):
-        res = re.search('var t="([0-9]+)",n="([0-9]+)",i="[^;]+";', html)
+        res = re.search('var [^;]*n="([0-9]+)"[^;]*;', html)
         if res:
-            timestamp = int(res.group(2))
+            timestamp = int(res.group(1))
             dt_object = datetime.fromtimestamp(timestamp)
             return dt_object.strftime("%Y-%m-%d %H:%M:%S")
         else:
+            print("can't extract pubdate")
             return None
 
     @staticmethod
@@ -644,8 +645,15 @@ class WechatAutomator:
             try:
                 self.click_url(rect, win_rect, click_up)
                 copy_btn = self.browser.child_window(title="复制链接地址")
-                self.click_center(copy_btn, click_main=False)
-                url = clipboard.GetData()
+                for _ in range(3):
+                    try:
+                        self.click_center(copy_btn, click_main=False)
+                        url = clipboard.GetData()
+                        break
+                    except:
+                        print("retry get url")
+                        time.sleep(1)
+
                 if elem.element_info.name != '图片':
                     clicked_titles.add(elem.element_info.name)
 

@@ -231,7 +231,8 @@ def main(parser):
                     curr_max_pages = max(max_crawl_pages, first_pages)
                     curr_latest_date = latest_date
 
-                s = "curr_max: {}, curr_pages: {}".format(curr_max_pages, curr_crawl_pages)
+                s = "curr_max: {}, curr_pages: {}, curr_latest_date: {}".format(curr_max_pages,
+                                             curr_crawl_pages, curr_latest_date)
                 print(s)
                 add_to_detail(s, detail)
                 if is_fuwuhao:
