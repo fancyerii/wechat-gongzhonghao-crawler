@@ -106,8 +106,8 @@ class WechatAutomator:
         return None
 
     @staticmethod
-    def get_pubdate(html):
-        res = re.search('var [^;]*n="([0-9]+)"[^;]*;', html)
+    def get_pubdate(html, regex_s):
+        res = re.search(regex_s, html)
         if res:
             timestamp = int(res.group(1))
             dt_object = datetime.fromtimestamp(timestamp)
@@ -198,7 +198,7 @@ class WechatAutomator:
         return True
 
 
-    def crawl_dingyuehao_read_count(self, account_name, results, states, detail,
+    def crawl_dingyuehao_read_count(self, account_name, results, states, detail, pubtime_regex,
                                     max_pages=12, no_item_retry=3, debug_ocr=False,
                                     locate_user=False):
         if locate_user and not self.locate_user(account_name):
@@ -228,7 +228,7 @@ class WechatAutomator:
             items = []
             try:
                 last_visited_titles = self.process_page(account_name, items, last_visited_titles, states,
-                                                    visited_urls, detail, True,
+                                                    visited_urls, detail, True, pubtime_regex,
                                                     debug_ocr, counter_only=True)
             except:
                 traceback.print_exc()
@@ -383,7 +383,7 @@ class WechatAutomator:
         browser_win.close()
         return True
 
-    def crawl_dingyuehao(self, account_name, articles, states, detail,
+    def crawl_dingyuehao(self, account_name, articles, states, detail, pubtime_regex,
                          max_pages=6, latest_date=None, no_item_retry=3,
                          crawl_counter=False, debug_ocr=False):
         '''
@@ -412,7 +412,7 @@ class WechatAutomator:
             items = []
             try:
                 last_visited_titles = self.process_page(account_name, items, last_visited_titles, states,
-                                                    visited_urls, detail, crawl_read_count,
+                                                    visited_urls, detail, crawl_read_count, pubtime_regex,
                                                     debug_ocr, stop_on_url_exist=True)
             except:
                 s = "process_page {} fail".format(page)
@@ -499,7 +499,7 @@ class WechatAutomator:
         return False
 
     def process_fwh_page(self, page, win, date_list, account_name, items, lastpage_clicked_titles, states,
-                     visited_urls, detail, need_counter, debug_ocr=False,
+                     visited_urls, detail, need_counter, pubtime_regex, debug_ocr=False,
                      counter_only=False, stop_on_url_exist=False):
         clicked_titles = set()
         cc = 0
@@ -537,7 +537,7 @@ class WechatAutomator:
                     if not counter_only:
                         try:
                             html = requests.get(url).text
-                            pub_date = WechatAutomator.get_pubdate(html)
+                            pub_date = WechatAutomator.get_pubdate(html, pubtime_regex)
                             elem_title = WechatAutomator.get_title(html)
                             date = datetime.strptime(pub_date, '%Y-%m-%d %H:%M:%S')
                             pub_date_epochs = datetime.timestamp(date)
@@ -581,7 +581,7 @@ class WechatAutomator:
         return clicked_titles
 
     def process_page(self, account_name, items, lastpage_clicked_titles, states,
-                     visited_urls, detail, need_counter, debug_ocr=False,
+                     visited_urls, detail, need_counter, pubtime_regex, debug_ocr=False,
                      counter_only=False, stop_on_url_exist=False):
         '''
         :param account_name: 微信公众名
@@ -665,7 +665,7 @@ class WechatAutomator:
                     if not counter_only:
                         try:
                             html = requests.get(url).text
-                            pub_date = WechatAutomator.get_pubdate(html)
+                            pub_date = WechatAutomator.get_pubdate(html, pubtime_regex)
 
                             date = datetime.strptime(pub_date, '%Y-%m-%d %H:%M:%S')
                             pub_date_epochs = datetime.timestamp(date)

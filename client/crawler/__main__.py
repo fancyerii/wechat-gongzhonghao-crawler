@@ -83,6 +83,8 @@ def main(parser):
     debug_ocr = parser.get('basic', 'debug_ocr', fallback="False")
     debug_ocr = debug_ocr.lower() == 'true'
 
+    pubtime_regex = parser.get('basic', 'pubtime_regex', fallback=r"var oriCreateTime = '(.*?)';")
+
 
     print("max_crawl_pages: {}, crawl_pages: {}".format(max_crawl_pages, crawl_pages))
     print("width: {}, height: {}".format(win_width, win_height))
@@ -97,6 +99,7 @@ def main(parser):
     print("crawl_read_count: {}".format(crawl_read_count))
     print("debug_ocr: {}".format(debug_ocr))
     print("find_window_timeout: {}".format(find_window_timeout))
+    print("pubtime_regex: {}".format(pubtime_regex))
 
     cwd = os.getcwd()
     print("current directory {}".format(cwd))
@@ -117,6 +120,7 @@ def main(parser):
     debug_info["counter_interval_seconds"] = counter_interval_seconds
     debug_info["debug_ocr"] = debug_ocr
     debug_info["find_window_timeout"] = find_window_timeout
+    debug_info["pubtime_regex"] = pubtime_regex
 
     automator = WechatAutomator()
     try:
@@ -245,7 +249,7 @@ def main(parser):
                     result = automator.crawl_dingyuehao(line, articles,
                                                     states=states, max_pages=curr_max_pages,
                                                     detail=detail, latest_date=curr_latest_date,
-                                                    crawl_counter=crawl_read_count,
+                                                    crawl_counter=crawl_read_count, pubtime_regex=pubtime_regex,
                                                     debug_ocr=debug_ocr)
                 s = "抓取 {} 成功: {}".format(line, result)
                 add_to_detail(s, detail)
